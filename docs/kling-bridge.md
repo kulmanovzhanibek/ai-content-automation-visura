@@ -32,6 +32,14 @@ throwaway jobs.**
   with it. Successful result contains video + cover URLs. **URLs expire in 24h** —
   download promptly.
 - Credits: `query_membership_and_credits` → `availableRemainCredits`.
+  One 5s v2_5 first+tail clip costs 25 credits.
+- `image_to_video` response: `{generation_id, status: "QUEUING", model, credits_consumed, message}`.
+- `query_tasks` response while running:
+  `{generation_id, status: "RUNNING", create_time, finish_time, works: [{status: "RUNNING", content_type: "unknown"}]}`.
+  When done: `status: "COMPLETED"` and each work carries `content_type: "video"`,
+  `url` (watermarked), `url_without_watermark`, `cover_url`,
+  `cover_url_without_watermark`. Download `url_without_watermark`.
+  Observed generation time: ~3 min for one 5s clip.
 
 ## Procedure (per job)
 
