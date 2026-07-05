@@ -15,6 +15,7 @@
 import "dotenv/config";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { fetch } from "./proxy.ts";
 
 const MODEL_ID = process.env.ELEVENLABS_MODEL_ID ?? "eleven_multilingual_v2";
 const OUTPUT_FORMAT = "mp3_44100_128";

@@ -12,6 +12,7 @@ import "dotenv/config";
 import { openAsBlob } from "node:fs";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { fetch } from "./proxy.ts";
 
 async function callBotApi(method: string, form: FormData): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;

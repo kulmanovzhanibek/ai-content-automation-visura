@@ -12,6 +12,15 @@ throwaway jobs.**
   (multipart fields `ticket` + `file`) — that's `src/kling-upload.ts`. The upload
   response contains the hosted file URL. Tickets are single-use; reuse the returned
   URL for unchanged files instead of re-uploading.
+- The upload endpoint rejects Node/undici multipart encoding
+  (HTTP.MissingServletRequestParameter, HTTP 500) — kling-upload.ts shells out to
+  `curl -F` instead, which works. Successful response:
+  `{"status":200,"result":1,"data":{"url":"https://s15-kling.klingai.com/kimg/...","fileType":"image","fileSize":N}}`.
+- In sandboxed cloud environments, Node's global fetch ignores HTTPS_PROXY; all
+  fetch-based scripts import proxy-aware fetch from `src/proxy.ts`. The env's
+  network allowlist must include kling.ai, *.kling.ai, *.klingai.com (plus
+  generativelanguage.googleapis.com, api.elevenlabs.io, api.telegram.org for the
+  other pipeline steps).
 - `kling-video-v2_5` (image_to_video): inputs `first_image` (required) +
   `tail_image` (optional) — both MUST be URLs returned by the upload flow, no local
   paths or external URLs. Arguments: `duration` ("5"/"10", default "5"),

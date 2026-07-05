@@ -7,6 +7,7 @@
  */
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { fetch } from "./proxy.ts";
 
 export async function download(url: string, outPath: string): Promise<string> {
   if (existsSync(outPath)) {
