@@ -5,56 +5,60 @@
  * (uncompressed). Pass --as-video to use sendVideo instead (inline player,
  * but Telegram may transcode/compress it).
  *
+ * Uses curl for the multipart POST: in sandboxed/cloud environments Node's
+ * undici FormData/Blob body does not stream correctly through the HTTPS_PROXY
+ * dispatcher (Telegram replies 400 "there is no document in the request"),
+ * the same failure class kling-upload.ts documents. curl -F encodes multipart
+ * reliably and honors HTTPS_PROXY.
+ *
  * Usage:
  *   npx tsx src/telegram.ts <path/to/video.mp4> ["optional caption"] [--as-video]
  */
 import "dotenv/config";
-import { openAsBlob } from "node:fs";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { fetch } from "./proxy.ts";
+import { execFileSync } from "node:child_process";
 
-async function callBotApi(method: string, form: FormData): Promise<void> {
+/** POST a multipart form to the Bot API via curl. `fields` are extra -F args. */
+function callBotApi(method: string, caption: string | undefined, fields: string[]): void {
   const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token) throw new Error("TELEGRAM_BOT_TOKEN is not set (see .env.example)");
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: "POST",
-    body: form,
-  });
-  const data = (await res.json()) as { ok: boolean; description?: string };
-  if (!res.ok || !data.ok) {
-    throw new Error(`Telegram ${res.status}: ${data.description ?? JSON.stringify(data)}`);
+  if (!chatId) throw new Error("TELEGRAM_CHAT_ID is not set (see .env.example)");
+
+  const args = ["-sS", "-X", "POST", `https://api.telegram.org/bot${token}/${method}`, "-F", `chat_id=${chatId}`];
+  if (caption) args.push("-F", `caption=${caption}`);
+  for (const f of fields) args.push("-F", f);
+
+  const body = execFileSync("curl", args, { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
+  const data = JSON.parse(body) as { ok: boolean; description?: string };
+  if (!data.ok) {
+    throw new Error(`Telegram: ${data.description ?? body}`);
   }
 }
 
-function baseForm(videoPath: string, caption?: string): FormData {
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!chatId) throw new Error("TELEGRAM_CHAT_ID is not set (see .env.example)");
+function assertFile(videoPath: string): void {
   if (!existsSync(videoPath)) throw new Error(`File not found: ${videoPath}`);
-  const form = new FormData();
-  form.append("chat_id", chatId);
-  if (caption) form.append("caption", caption);
-  return form;
 }
 
 /** Send as document: file arrives uncompressed, exactly as rendered. */
 export async function sendDocument(videoPath: string, caption?: string): Promise<void> {
-  const form = baseForm(videoPath, caption);
-  form.append("document", await openAsBlob(videoPath, { type: "video/mp4" }), path.basename(videoPath));
+  assertFile(videoPath);
   console.log(`[telegram] sendDocument (uncompressed) ${videoPath} ...`);
-  await callBotApi("sendDocument", form);
+  callBotApi("sendDocument", caption, [`document=@${videoPath};type=video/mp4`]);
   console.log("[telegram] sent OK (as file, no compression)");
 }
 
 /** Send as video: inline player, but Telegram may transcode it. */
 export async function sendVideo(videoPath: string, caption?: string): Promise<void> {
-  const form = baseForm(videoPath, caption);
-  form.append("video", await openAsBlob(videoPath, { type: "video/mp4" }), path.basename(videoPath));
-  form.append("supports_streaming", "true");
-  form.append("width", "1080");
-  form.append("height", "1920");
+  assertFile(videoPath);
   console.log(`[telegram] sendVideo ${videoPath} ...`);
-  await callBotApi("sendVideo", form);
+  callBotApi("sendVideo", caption, [
+    `video=@${videoPath};type=video/mp4`,
+    "supports_streaming=true",
+    "width=1080",
+    "height=1920",
+  ]);
   console.log("[telegram] sent OK (as video)");
 }
 
