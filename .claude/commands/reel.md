@@ -24,7 +24,13 @@ Write (yourself, no API) and save `{ "script": "...", "image_prompts": ["...", .
   so consecutive frames can morph into each other. Vertical 9:16 composition.
 
 ## 2. Images
-`npx tsx src/gen-images.ts <job_id> "<prompt 1>" "<prompt 2>" ...`
+Two formats, pick per concept:
+- Independent scenes: `npx tsx src/gen-images.ts <job_id> "<prompt 1>" "<prompt 2>" ...`
+- SAME SPACE, different contents (e.g. "ideas for this room" reels):
+  `npx tsx src/gen-images.ts <job_id> --base-first "<base scene prompt>" "<edit 1>" ...`
+  Prompt 1 generates the base frame; each edit prompt receives the base image and
+  must say what to ADD/CHANGE and that architecture, walls, floor, lighting and
+  camera angle stay EXACTLY identical.
 (script skips images that exist). Eyeball that they came out 9:16 and on-style.
 
 ## 3. Voice
