@@ -1,26 +1,28 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { createTikTokStyleCaptions, type Caption } from "@remotion/captions";
+import "@fontsource/montserrat/700.css";
 
 /**
  * ALL caption styling lives here — tweak this one object.
+ * Style: classic TikTok captions — bold white, black outline, sentence case,
+ * NO per-word highlight.
  */
 export const CAPTION_STYLE = {
   // page grouping: how many ms of tokens are combined onto one caption page
-  combineTokensWithinMilliseconds: 1200,
+  combineTokensWithinMilliseconds: 1400,
   // typography
-  fontFamily: "Arial, Helvetica, sans-serif",
-  fontSize: 72,
-  fontWeight: 900 as const,
-  textTransform: "uppercase" as const,
+  fontFamily: "'Montserrat', Arial, Helvetica, sans-serif",
+  fontSize: 64,
+  fontWeight: 700 as const,
   color: "white",
-  highlightColor: "#3CE55E", // active (currently spoken) word
   strokeColor: "black",
-  strokeWidth: 10,
+  strokeWidth: 8,
+  shadow: "0 4px 16px rgba(0,0,0,0.45)",
   // placement (relative to 1080x1920 frame)
-  bottomOffset: 560, // px from the bottom
-  maxWidthPercent: 85,
-  lineHeight: 1.15,
+  bottomOffset: 780, // px from the bottom (reference style sits near center)
+  maxWidthPercent: 82,
+  lineHeight: 1.25,
 } as const;
 
 export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
@@ -67,23 +69,14 @@ export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
           fontFamily: CAPTION_STYLE.fontFamily,
           fontSize: CAPTION_STYLE.fontSize,
           fontWeight: CAPTION_STYLE.fontWeight,
-          textTransform: CAPTION_STYLE.textTransform,
           lineHeight: CAPTION_STYLE.lineHeight,
+          color: CAPTION_STYLE.color,
           WebkitTextStroke: `${CAPTION_STYLE.strokeWidth}px ${CAPTION_STYLE.strokeColor}`,
           paintOrder: "stroke fill",
+          textShadow: CAPTION_STYLE.shadow,
         }}
       >
-        {page.tokens.map((token, i) => {
-          const active = timeMs >= token.fromMs && timeMs < token.toMs;
-          return (
-            <span
-              key={i}
-              style={{ color: active ? CAPTION_STYLE.highlightColor : CAPTION_STYLE.color }}
-            >
-              {token.text}
-            </span>
-          );
-        })}
+        {page.text}
       </div>
     </AbsoluteFill>
   );

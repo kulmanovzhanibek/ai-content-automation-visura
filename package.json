@@ -21,6 +21,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@fontsource/montserrat": "^5.2.8",
     "@google/genai": "^2.10.0",
     "@remotion/captions": "^4.0.484",
     "@remotion/cli": "^4.0.484",
