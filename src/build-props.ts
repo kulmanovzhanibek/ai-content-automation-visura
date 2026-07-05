@@ -29,7 +29,14 @@ export function buildProps(jobId: string): string {
     ? JSON.parse(readFileSync(path.join(jobDir, "captions.json"), "utf8"))
     : [];
 
-  const props = { clips, voice, captions };
+  // preset.json is copied into the job dir by /reel; its caption_style
+  // overrides the defaults baked into remotion/src/Captions.tsx
+  const presetPath = path.join(jobDir, "preset.json");
+  const captionStyle = existsSync(presetPath)
+    ? (JSON.parse(readFileSync(presetPath, "utf8")).caption_style ?? {})
+    : {};
+
+  const props = { clips, voice, captions, captionStyle };
   const outPath = path.join(jobDir, "props.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(

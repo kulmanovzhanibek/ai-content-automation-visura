@@ -25,7 +25,20 @@ export const CAPTION_STYLE = {
   lineHeight: 1.25,
 } as const;
 
-export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
+export type CaptionStyleOverrides = Partial<{
+  combineTokensWithinMilliseconds: number;
+  fontSize: number;
+  color: string;
+  strokeWidth: number;
+  bottomOffset: number;
+  maxWidthPercent: number;
+}>;
+
+export const Captions: React.FC<{
+  captions: Caption[];
+  styleOverrides?: CaptionStyleOverrides;
+}> = ({ captions, styleOverrides }) => {
+  const style = { ...CAPTION_STYLE, ...styleOverrides };
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const timeMs = (frame / fps) * 1000;
@@ -34,9 +47,9 @@ export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
     () =>
       createTikTokStyleCaptions({
         captions,
-        combineTokensWithinMilliseconds: CAPTION_STYLE.combineTokensWithinMilliseconds,
+        combineTokensWithinMilliseconds: style.combineTokensWithinMilliseconds,
       }),
-    [captions]
+    [captions, style.combineTokensWithinMilliseconds]
   );
 
   const page = useMemo(() => {
@@ -59,21 +72,21 @@ export const Captions: React.FC<{ captions: Caption[] }> = ({ captions }) => {
       style={{
         justifyContent: "flex-end",
         alignItems: "center",
-        paddingBottom: CAPTION_STYLE.bottomOffset,
+        paddingBottom: style.bottomOffset,
       }}
     >
       <div
         style={{
-          maxWidth: `${CAPTION_STYLE.maxWidthPercent}%`,
+          maxWidth: `${style.maxWidthPercent}%`,
           textAlign: "center",
-          fontFamily: CAPTION_STYLE.fontFamily,
-          fontSize: CAPTION_STYLE.fontSize,
-          fontWeight: CAPTION_STYLE.fontWeight,
-          lineHeight: CAPTION_STYLE.lineHeight,
-          color: CAPTION_STYLE.color,
-          WebkitTextStroke: `${CAPTION_STYLE.strokeWidth}px ${CAPTION_STYLE.strokeColor}`,
+          fontFamily: style.fontFamily,
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          lineHeight: style.lineHeight,
+          color: style.color,
+          WebkitTextStroke: `${style.strokeWidth}px ${style.strokeColor}`,
           paintOrder: "stroke fill",
-          textShadow: CAPTION_STYLE.shadow,
+          textShadow: style.shadow,
         }}
       >
         {page.text}

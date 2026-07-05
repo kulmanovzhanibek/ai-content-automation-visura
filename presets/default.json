@@ -1,0 +1,13 @@
+{
+  "name": "default",
+  "description": "Generic reel: N independent keyframes of one continuous scene, smooth morph transitions.",
+  "language": "en",
+  "voice_id": null,
+  "images_default": 5,
+  "gen_images_mode": "",
+  "image_style_preamble": "Photorealistic, vertical 9:16 composition, cinematic natural lighting, one consistent visual style across all frames (same palette, same lens, same mood).",
+  "script_structure": "Hook in first 3s, one beat per frame, punchline or CTA at the end. ~2.2 words/sec.",
+  "transition_prompt_template": "Seamless continuous timelapse in one single uninterrupted shot: {WHAT_CHANGES}, evenly paced across the entire clip. No scene cuts, no flashes, no sudden jumps. Camera perfectly static, identical framing throughout. Constant natural lighting. No people.",
+  "caption_style": {},
+  "telegram_caption": ""
+}

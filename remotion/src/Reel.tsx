@@ -19,11 +19,22 @@ export const reelSchema = z.object({
       confidence: z.number().nullable(),
     })
   ),
+  // optional per-preset overrides merged over CAPTION_STYLE
+  captionStyle: z
+    .object({
+      combineTokensWithinMilliseconds: z.number().optional(),
+      fontSize: z.number().optional(),
+      color: z.string().optional(),
+      strokeWidth: z.number().optional(),
+      bottomOffset: z.number().optional(),
+      maxWidthPercent: z.number().optional(),
+    })
+    .optional(),
 });
 
 export type ReelProps = z.infer<typeof reelSchema>;
 
-export const Reel: React.FC<ReelProps> = ({ clips, voice, captions }) => {
+export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Series>
@@ -38,7 +49,7 @@ export const Reel: React.FC<ReelProps> = ({ clips, voice, captions }) => {
         ))}
       </Series>
       {voice ? <Audio src={staticFile(voice)} /> : null}
-      {captions.length > 0 ? <Captions captions={captions} /> : null}
+      {captions.length > 0 ? <Captions captions={captions} styleOverrides={captionStyle} /> : null}
     </AbsoluteFill>
   );
 };
