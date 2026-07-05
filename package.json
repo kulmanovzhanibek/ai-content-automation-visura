@@ -1,0 +1,32 @@
+{
+  "name": "reels-machine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Automated short-form video pipeline: images (Gemini) + voice (ElevenLabs) + transitions (Kling) + montage (Remotion) + Telegram",
+  "scripts": {
+    "gen-images": "tsx src/gen-images.ts",
+    "tts": "tsx src/tts.ts",
+    "captions": "tsx src/captions.ts",
+    "telegram": "tsx src/telegram.ts",
+    "test:captions": "tsx src/captions.ts --test",
+    "test:gen-images": "tsx src/gen-images.ts --test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@google/genai": "^2.10.0",
+    "@remotion/captions": "^4.0.484",
+    "@remotion/cli": "^4.0.484",
+    "dotenv": "^17.4.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.484"
+  }
+}
