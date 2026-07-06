@@ -41,6 +41,13 @@ Two formats, pick per concept:
   camera angle stay EXACTLY identical.
 (script skips images that exist). Eyeball that they came out 9:16 and on-style.
 
+Then send ALL generated images to Telegram as uncompressed files AND to the user
+in chat, right away — don't wait for the finished video:
+`npx tsx src/telegram.ts --images <job_id>`
+(sends every img_*.png as a document in frame order; idempotent via a `.tg-sent`
+sentinel so resuming a job never re-posts them). Also surface the same images to
+the user in chat via the file-send tool.
+
 ## 3. Voice
 `npx tsx src/tts.ts <job_id> "<script text>"`
 Then read the final duration from timestamps.json (last character_end_times_seconds)
