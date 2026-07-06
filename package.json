@@ -25,6 +25,7 @@
     "@google/genai": "^2.10.0",
     "@remotion/captions": "^4.0.484",
     "@remotion/cli": "^4.0.484",
+    "@remotion/transitions": "^4.0.484",
     "dotenv": "^17.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
