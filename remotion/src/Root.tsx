@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { Reel, reelSchema, CLIP_DURATION_S, FPS } from "./Reel";
 import { Slideshow, slideshowSchema } from "./Slideshow";
+import { ColorReel, colorReelSchema } from "./ColorReel";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -43,6 +44,22 @@ export const RemotionRoot: React.FC = () => {
             n * props.imageDurationInFrames - (n - 1) * props.transitionDurationInFrames;
           return { durationInFrames: Math.max(1, total) };
         }}
+      />
+      <Composition
+        id="ColorReel"
+        component={ColorReel}
+        schema={colorReelSchema}
+        width={1080}
+        height={1920}
+        fps={FPS}
+        durationInFrames={11 * FPS}
+        defaultProps={{ frames: [] }}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: Math.max(
+            1,
+            props.frames.reduce((s, f) => s + Math.max(1, f.durationInFrames), 0)
+          ),
+        })}
       />
     </>
   );
