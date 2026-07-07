@@ -33,6 +33,8 @@ export const RemotionRoot: React.FC = () => {
           captions: [],
           imageDurationInFrames: 120,
           transitionDurationInFrames: 18,
+          transition: "slide" as const,
+          motion: "kenburns" as const,
         }}
         calculateMetadata={({ props }) => {
           const n = Math.max(1, props.images.length);

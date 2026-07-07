@@ -7,7 +7,13 @@
  * `--seconds N` override. Falls back to 20s when there's no voice.
  *
  * Usage:
- *   npx tsx src/build-slideshow-props.ts <job_id> [--seconds N] [--transition F]
+ *   npx tsx src/build-slideshow-props.ts <job_id> [options]
+ *     --seconds N        total montage length (default: voice length +1s, else 3s/image)
+ *     --transition TYPE  slide | wipe | fade   (default slide)
+ *     --transition-frames F   transition length in frames (default 18, or 24 for wipe)
+ *     --still            image stays put (no Ken Burns zoom)
+ *     --no-voice         silent montage (ignore voice.mp3)
+ *     --no-captions      no caption overlay
  * Then:
  *   npx remotion render Slideshow jobs/<job_id>/slideshow.mp4 --props=jobs/<job_id>/props-slideshow.json
  */
@@ -18,7 +24,14 @@ const FPS = 30;
 
 export function buildSlideshowProps(
   jobId: string,
-  opts: { seconds?: number; transitionFrames?: number } = {}
+  opts: {
+    seconds?: number;
+    transitionFrames?: number;
+    transition?: "slide" | "wipe" | "fade";
+    still?: boolean;
+    noVoice?: boolean;
+    noCaptions?: boolean;
+  } = {}
 ): string {
   const jobDir = path.join("jobs", jobId);
   const imagesDir = path.join(jobDir, "images");
@@ -30,18 +43,24 @@ export function buildSlideshowProps(
   if (imgs.length === 0) throw new Error(`No img_*.png in ${imagesDir}`);
   const images = imgs.map((f) => `${jobId}/images/${f}`);
 
-  const voice = existsSync(path.join(jobDir, "voice.mp3")) ? `${jobId}/voice.mp3` : null;
-  const captions = existsSync(path.join(jobDir, "captions.json"))
-    ? JSON.parse(readFileSync(path.join(jobDir, "captions.json"), "utf8"))
-    : [];
+  const voice =
+    !opts.noVoice && existsSync(path.join(jobDir, "voice.mp3")) ? `${jobId}/voice.mp3` : null;
+  const captions =
+    !opts.noCaptions && existsSync(path.join(jobDir, "captions.json"))
+      ? JSON.parse(readFileSync(path.join(jobDir, "captions.json"), "utf8"))
+      : [];
   const presetPath = path.join(jobDir, "preset.json");
   const captionStyle = existsSync(presetPath)
     ? JSON.parse(readFileSync(presetPath, "utf8")).caption_style ?? {}
     : {};
 
+  const n = images.length;
+  const transition = opts.transition ?? "slide";
+  const motion = opts.still ? "none" : "kenburns";
+
   // Determine target total length (seconds).
-  let targetSeconds = opts.seconds ?? 20;
-  if (opts.seconds === undefined) {
+  let targetSeconds = opts.seconds ?? n * 3; // no-voice default: ~3s per image
+  if (opts.seconds === undefined && voice) {
     const tsPath = path.join(jobDir, "timestamps.json");
     if (existsSync(tsPath)) {
       const a = JSON.parse(readFileSync(tsPath, "utf8")).alignment;
@@ -51,8 +70,9 @@ export function buildSlideshowProps(
     }
   }
 
-  const n = images.length;
-  const transitionDurationInFrames = opts.transitionFrames ?? 18; // 0.6s page slide
+  // wipe reads smoother with a slightly longer sweep
+  const transitionDurationInFrames =
+    opts.transitionFrames ?? (transition === "wipe" ? 24 : 18);
   const targetFrames = Math.round(targetSeconds * FPS);
   // total = n*D - (n-1)*T  =>  D = (total + (n-1)*T) / n
   let imageDurationInFrames = Math.round(
@@ -69,13 +89,16 @@ export function buildSlideshowProps(
     captionStyle,
     imageDurationInFrames,
     transitionDurationInFrames,
+    transition,
+    motion,
   };
   const outPath = path.join(jobDir, "props-slideshow.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(
     `[build-slideshow-props] wrote ${outPath}: ${n} image(s), ` +
-      `${(imageDurationInFrames / FPS).toFixed(2)}s each, ${transitionDurationInFrames}f slide, ` +
-      `total ${(totalFrames / FPS).toFixed(2)}s (target ${targetSeconds.toFixed(1)}s), voice=${voice ?? "none"}`
+      `${(imageDurationInFrames / FPS).toFixed(2)}s each, ${transition} ${transitionDurationInFrames}f, ` +
+      `motion=${motion}, total ${(totalFrames / FPS).toFixed(2)}s (target ${targetSeconds.toFixed(1)}s), ` +
+      `voice=${voice ?? "none"}, captions=${captions.length}`
   );
   return outPath;
 }
@@ -88,12 +111,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log("Usage: tsx src/build-slideshow-props.ts <job_id> [--seconds N] [--transition F]");
     process.exit(1);
   }
-  const sIdx = args.indexOf("--seconds");
-  const tIdx = args.indexOf("--transition");
+  const val = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i >= 0 ? args[i + 1] : undefined;
+  };
+  const transition = val("--transition") as "slide" | "wipe" | "fade" | undefined;
+  const secs = val("--seconds");
+  const tf = val("--transition-frames");
   try {
     buildSlideshowProps(jobId, {
-      seconds: sIdx >= 0 ? Number(args[sIdx + 1]) : undefined,
-      transitionFrames: tIdx >= 0 ? Number(args[tIdx + 1]) : undefined,
+      seconds: secs !== undefined ? Number(secs) : undefined,
+      transitionFrames: tf !== undefined ? Number(tf) : undefined,
+      transition,
+      still: args.includes("--still"),
+      noVoice: args.includes("--no-voice"),
+      noCaptions: args.includes("--no-captions"),
     });
   } catch (e) {
     console.error("[build-slideshow-props] FAILED:", (e as Error).message);

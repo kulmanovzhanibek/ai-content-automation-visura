@@ -9,22 +9,29 @@ import {
   Easing,
 } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
+import type { TransitionPresentation } from "@remotion/transitions";
 import { slide } from "@remotion/transitions/slide";
+import { wipe } from "@remotion/transitions/wipe";
+import { fade } from "@remotion/transitions/fade";
 import { z } from "zod";
 import { Captions } from "./Captions";
 
 export const FPS = 30;
 
 /**
- * Slideshow: a Kling-free montage. Static images with smooth page-slide
- * transitions (alternating direction — like turning pages left→right, then
- * right→left) plus a subtle Ken Burns drift so each frame feels alive. Same
- * voice + TikTok captions as the Reel composition.
+ * Slideshow: a Kling-free montage straight from the job images.
+ *
+ * Options:
+ *   transition — how one image becomes the next:
+ *     "slide" : page-slide, alternating direction (→ then ←)
+ *     "wipe"  : a soft line sweeps across (default from the top) revealing the
+ *               next image while the current one stays perfectly still
+ *     "fade"  : cross-dissolve
+ *   motion    — "kenburns" (slow zoom drift) or "none" (image stays put)
+ *   voice/captions are optional; pass null / [] to omit (silent montage).
  *
  * Total length = images.length * imageDurationInFrames
  *              - (images.length - 1) * transitionDurationInFrames
- * (transitions overlap the adjacent images). build-slideshow-props.ts sizes
- * imageDurationInFrames to fit the voiceover.
  */
 export const slideshowSchema = z.object({
   images: z.array(z.string()),
@@ -50,23 +57,27 @@ export const slideshowSchema = z.object({
     .optional(),
   imageDurationInFrames: z.number().default(120),
   transitionDurationInFrames: z.number().default(18),
+  transition: z.enum(["slide", "wipe", "fade"]).default("slide"),
+  motion: z.enum(["kenburns", "none"]).default("kenburns"),
 });
 
 export type SlideshowProps = z.infer<typeof slideshowSchema>;
 
-/** Full-bleed image with a slow zoom so a still doesn't look frozen. */
-const KenBurns: React.FC<{ src: string; durationInFrames: number; zoomIn: boolean }> = ({
-  src,
-  durationInFrames,
-  zoomIn,
-}) => {
+/** One frame of the montage. With motion "none" the image is perfectly static. */
+const Frame: React.FC<{
+  src: string;
+  durationInFrames: number;
+  motion: "kenburns" | "none";
+  zoomIn: boolean;
+}> = ({ src, durationInFrames, motion, zoomIn }) => {
   const frame = useCurrentFrame();
-  const scale = interpolate(
-    frame,
-    [0, durationInFrames],
-    zoomIn ? [1.03, 1.1] : [1.1, 1.03],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  const scale =
+    motion === "none"
+      ? 1
+      : interpolate(frame, [0, durationInFrames], zoomIn ? [1.03, 1.1] : [1.1, 1.03], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Img
@@ -77,6 +88,19 @@ const KenBurns: React.FC<{ src: string; durationInFrames: number; zoomIn: boolea
   );
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const presentationFor = (
+  transition: "slide" | "wipe" | "fade",
+  index: number
+): TransitionPresentation<Record<string, unknown>> => {
+  if (transition === "wipe") return wipe({ direction: "from-top" }) as TransitionPresentation<Record<string, unknown>>;
+  if (transition === "fade") return fade() as TransitionPresentation<Record<string, unknown>>;
+  // slide: alternate direction so pages turn →, then ←
+  return slide({
+    direction: index % 2 === 0 ? "from-right" : "from-left",
+  }) as TransitionPresentation<Record<string, unknown>>;
+};
+
 export const Slideshow: React.FC<SlideshowProps> = ({
   images,
   voice,
@@ -84,6 +108,8 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   captionStyle,
   imageDurationInFrames,
   transitionDurationInFrames,
+  transition,
+  motion,
 }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -91,16 +117,19 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         {images.flatMap((img, i) => {
           const nodes: React.ReactNode[] = [
             <TransitionSeries.Sequence key={`img-${i}`} durationInFrames={imageDurationInFrames}>
-              <KenBurns src={img} durationInFrames={imageDurationInFrames} zoomIn={i % 2 === 0} />
+              <Frame
+                src={img}
+                durationInFrames={imageDurationInFrames}
+                motion={motion}
+                zoomIn={i % 2 === 0}
+              />
             </TransitionSeries.Sequence>,
           ];
           if (i < images.length - 1) {
-            // alternate the slide direction: page turns right→left, then left→right
-            const direction = i % 2 === 0 ? "from-right" : "from-left";
             nodes.push(
               <TransitionSeries.Transition
                 key={`trans-${i}`}
-                presentation={slide({ direction })}
+                presentation={presentationFor(transition, i)}
                 timing={linearTiming({
                   durationInFrames: transitionDurationInFrames,
                   easing: Easing.inOut(Easing.cubic),
