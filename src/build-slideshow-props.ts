@@ -28,6 +28,7 @@ export function buildSlideshowProps(
     seconds?: number;
     transitionFrames?: number;
     transition?: "slide" | "wipe" | "fade";
+    wipeDirection?: "from-left" | "from-right" | "from-top" | "from-bottom";
     still?: boolean;
     noVoice?: boolean;
     noCaptions?: boolean;
@@ -57,6 +58,7 @@ export function buildSlideshowProps(
   const n = images.length;
   const transition = opts.transition ?? "slide";
   const motion = opts.still ? "none" : "kenburns";
+  const wipeDirection = opts.wipeDirection ?? "from-left";
 
   // Determine target total length (seconds).
   let targetSeconds = opts.seconds ?? n * 3; // no-voice default: ~3s per image
@@ -91,6 +93,7 @@ export function buildSlideshowProps(
     transitionDurationInFrames,
     transition,
     motion,
+    wipeDirection,
   };
   const outPath = path.join(jobDir, "props-slideshow.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
@@ -116,6 +119,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     return i >= 0 ? args[i + 1] : undefined;
   };
   const transition = val("--transition") as "slide" | "wipe" | "fade" | undefined;
+  const wipeDirection = val("--wipe-direction") as
+    | "from-left"
+    | "from-right"
+    | "from-top"
+    | "from-bottom"
+    | undefined;
   const secs = val("--seconds");
   const tf = val("--transition-frames");
   try {
@@ -123,6 +132,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       seconds: secs !== undefined ? Number(secs) : undefined,
       transitionFrames: tf !== undefined ? Number(tf) : undefined,
       transition,
+      wipeDirection,
       still: args.includes("--still"),
       noVoice: args.includes("--no-voice"),
       noCaptions: args.includes("--no-captions"),

@@ -59,6 +59,10 @@ export const slideshowSchema = z.object({
   transitionDurationInFrames: z.number().default(18),
   transition: z.enum(["slide", "wipe", "fade"]).default("slide"),
   motion: z.enum(["kenburns", "none"]).default("kenburns"),
+  // which way the wipe line sweeps (only used when transition === "wipe")
+  wipeDirection: z
+    .enum(["from-left", "from-right", "from-top", "from-bottom"])
+    .default("from-left"),
 });
 
 export type SlideshowProps = z.infer<typeof slideshowSchema>;
@@ -91,9 +95,11 @@ const Frame: React.FC<{
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const presentationFor = (
   transition: "slide" | "wipe" | "fade",
-  index: number
+  index: number,
+  wipeDirection: "from-left" | "from-right" | "from-top" | "from-bottom"
 ): TransitionPresentation<Record<string, unknown>> => {
-  if (transition === "wipe") return wipe({ direction: "from-top" }) as TransitionPresentation<Record<string, unknown>>;
+  if (transition === "wipe")
+    return wipe({ direction: wipeDirection }) as TransitionPresentation<Record<string, unknown>>;
   if (transition === "fade") return fade() as TransitionPresentation<Record<string, unknown>>;
   // slide: alternate direction so pages turn →, then ←
   return slide({
@@ -110,6 +116,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   transitionDurationInFrames,
   transition,
   motion,
+  wipeDirection,
 }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -129,7 +136,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
             nodes.push(
               <TransitionSeries.Transition
                 key={`trans-${i}`}
-                presentation={presentationFor(transition, i)}
+                presentation={presentationFor(transition, i, wipeDirection)}
                 timing={linearTiming({
                   durationInFrames: transitionDurationInFrames,
                   easing: Easing.inOut(Easing.cubic),
