@@ -61,11 +61,19 @@ function assertFile(videoPath: string): void {
   if (!existsSync(videoPath)) throw new Error(`File not found: ${videoPath}`);
 }
 
-/** Send as document: file arrives uncompressed, exactly as rendered. */
+/**
+ * Send as document: file arrives uncompressed, exactly as rendered.
+ * `disable_content_type_detection=true` stops Telegram from auto-detecting an
+ * mp4 document as a streamable video and showing an inline player — it arrives
+ * as a plain downloadable file attachment.
+ */
 export async function sendDocument(filePath: string, caption?: string): Promise<void> {
   assertFile(filePath);
   console.log(`[telegram] sendDocument (uncompressed) ${filePath} ...`);
-  callBotApi("sendDocument", caption, [`document=@${filePath};type=${mimeFor(filePath)}`]);
+  callBotApi("sendDocument", caption, [
+    `document=@${filePath};type=${mimeFor(filePath)}`,
+    "disable_content_type_detection=true",
+  ]);
   console.log("[telegram] sent OK (as file, no compression)");
 }
 
