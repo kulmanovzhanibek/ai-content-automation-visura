@@ -38,17 +38,24 @@ timelapse transitions → Remotion montage with captions → Telegram.
 GEMINI_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID,
 TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
-## Output formats (three finished deliverables, all 1080x1920, all end in Telegram-as-file)
-1. **Kling reel** — voiceover + images + Kling timelapse transitions + captions →
-   `out.mp4`. Composition `Reel`. The full pipeline above. Costs Kling credits.
-2. **ColorReel (color-swap)** — Kling-free. Same room, N wall/cabinet colors, one
-   "before" title frame, standing text pill, hard cuts, no voice. Composition
-   `ColorReel`, built from a `color-plan.json`. 0 credits. Great for
-   "how color transforms the same room" ideas.
-3. **Slides carousel** — photo + hook + text, exported as PNG slides (no video, no
-   voice). Composition `Slide` (rendered as stills). Concept via
-   `slides-concept.ts`, render via `render-slides.ts`. For app-marketing
-   before/after slideshows.
+## Output formats & commands (all 1080x1920, all end in Telegram-as-file)
+One slash command per format — each runs the whole flow from the idea to the
+finished artifact sent to Telegram as an uncompressed file:
+
+| Command | Format | Composition | Voice | Kling |
+|---|---|---|---|---|
+| `/reel` | WITH Kling AI — voiceover + Kling timelapse transitions + captions | `Reel` | yes | yes (credits) |
+| `/montage` | WITHOUT Kling — photo montage, wipe/slide/fade + voiceover + captions | `Slideshow` | yes | no |
+| `/silent` | WITHOUT voice — color-swap pills or silent montage | `ColorReel` / `Slideshow` | no | no |
+| `/slides` | JUST SCREENSHOTS — photo + hook + text PNG carousel (no video) | `Slide` (stills) | no | no |
+
+- **Reel** = the full pipeline above (`build-props` → render `Reel`).
+- **Slideshow** = Kling-free montage from images (`build-slideshow-props` → render
+  `Slideshow`), transitions wipe/slide/fade, optional `--no-voice`/`--no-captions`.
+- **ColorReel** = same room, N colors, "before" title frame, standing text pill,
+  hard cuts, no voice (`build-color-props` from a `color-plan.json`).
+- **Slides** = concept via `slides-concept.ts` → backgrounds via `gen-images` →
+  `render-slides.ts` → `telegram --slides`.
 
 ## Viral content direction (hooks & visuals) — MANDATORY when writing any concept
 You are an expert TikTok/Shorts viral content director for B2C AI mobile apps.
