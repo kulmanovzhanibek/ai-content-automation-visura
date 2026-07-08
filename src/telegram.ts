@@ -103,6 +103,30 @@ export async function sendImages(jobId: string, force = false): Promise<void> {
   console.log(`[telegram] all ${imgs.length} images sent (wrote ${sentinel})`);
 }
 
+/**
+ * Send a rendered slide carousel (jobs/<job>/slides/slide_*.png) as uncompressed
+ * documents, in order. Idempotent via a `.tg-sent` sentinel in the slides dir.
+ */
+export async function sendSlides(jobId: string, force = false): Promise<void> {
+  const dir = path.join("jobs", jobId, "slides");
+  if (!existsSync(dir)) throw new Error(`No slides dir: ${dir}`);
+  const sentinel = path.join(dir, ".tg-sent");
+  if (existsSync(sentinel) && !force) {
+    console.log(`[telegram] slides already sent (${sentinel}) — skip`);
+    return;
+  }
+  const slides = readdirSync(dir)
+    .filter((f) => /^slide_\d+\.png$/.test(f))
+    .sort((a, b) => Number(a.match(/\d+/)![0]) - Number(b.match(/\d+/)![0]));
+  if (slides.length === 0) throw new Error(`No slide_*.png in ${dir}`);
+  console.log(`[telegram] sending ${slides.length} slide(s) as files ...`);
+  for (let i = 0; i < slides.length; i++) {
+    await sendDocument(path.join(dir, slides[i]), `${jobId} — slide ${i + 1}/${slides.length}`);
+  }
+  writeFileSync(sentinel, `sent ${slides.length} slides\n`);
+  console.log(`[telegram] all ${slides.length} slides sent (wrote ${sentinel})`);
+}
+
 /** Send as video: inline player, but Telegram may transcode it. */
 export async function sendVideo(videoPath: string, caption?: string): Promise<void> {
   assertFile(videoPath);
@@ -132,6 +156,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.exit(1);
     }
     sendImages(jobId, force).catch(fail);
+  } else if (args[0] === "--slides") {
+    const jobId = args[1];
+    const force = args.includes("--force");
+    if (!jobId) {
+      console.log("Usage: tsx src/telegram.ts --slides <job_id> [--force]");
+      process.exit(1);
+    }
+    sendSlides(jobId, force).catch(fail);
   } else {
     const asVideo = args.includes("--as-video");
     const [filePath, caption] = args.filter((a) => a !== "--as-video");

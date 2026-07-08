@@ -26,3 +26,22 @@ cp .env.example .env   # fill in your keys
 All job artifacts live under `jobs/<job_id>/`: `images/`, `clips/`, `voice.mp3`,
 `timestamps.json`, `captions.json`, `props.json`, `out.mp4`. Every step is
 idempotent — outputs that already exist are skipped.
+
+## Slides pipeline (photo + hook + text carousel)
+
+A second, video-free output: a TikTok photo-slideshow — vertical photos with big
+text plaques, exported as PNG slides (no voice, no Kling). Ported from the
+SlideLab tool.
+
+1. **Concept** — `npx tsx src/slides-concept.ts <job_id> --niche "..." --app "..." --pain "..." [--lang ru|en] [--audience "..."] [--features "..."] [--format 1|2|3]`
+   → writes `concepts.json` (3 hook formats) and the chosen `slides.json`
+   (5 slides: hook → pain → insight → solution → soft CTA, each with `text` +
+   `image_prompt`). Uses Claude (`ANTHROPIC_API_KEY`, model `claude-sonnet-5`)
+   when set; otherwise offline template concepts.
+2. **Backgrounds** — `npx tsx src/gen-images.ts <job_id> "<image_prompt 1>" ...`
+   (the per-slide prompts from `slides.json`) → `images/img_N.png`.
+3. **Render** — `npx tsx src/render-slides.ts <job_id> [--style white|black|plain] [--position top|center|bottom]`
+   → `slides/slide_N.png` (1080×1920) via the Remotion `Slide` composition.
+   Per-slide `position`/`textStyle` in `slides.json` override the defaults.
+4. **Send** — `npx tsx src/telegram.ts --slides <job_id>` posts the carousel as
+   uncompressed documents, in order.
