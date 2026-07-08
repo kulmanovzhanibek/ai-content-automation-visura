@@ -57,6 +57,39 @@ finished artifact sent to Telegram as an uncompressed file:
 - **Slides** = concept via `slides-concept.ts` → backgrounds via `gen-images` →
   `render-slides.ts` → `telegram --slides`.
 
+## Slides pipeline rules (photo + hook + text carousel) — MANDATORY
+Hard-won conventions for the `/slides` format. Follow all of them.
+- **Text & hooks in ENGLISH** by default (this project's audience). Hook slide
+  < 8 words; each slide one line, big readable plaque, no emoji/hashtags on-frame.
+- **Same scene across the whole story.** The room/subject MUST be the SAME in
+  every slide — do NOT let it drift between frames. Generate the backgrounds with
+  `gen-images --base-first`: prompt 1 = the base scene, every other prompt is an
+  EDIT that says the architecture/furniture/camera stay identical and only adds
+  the new element (a person, a hand+phone, the redesign). A different room each
+  slide reads as broken.
+- **Before/after must be the SAME room.** The "after" is an edit of the "before"
+  base, so it's recognizably the same space transformed.
+- **Generate the AFTER first, then reuse it.** Render the final "after" image once
+  (e.g. `img_5.png`), then reuse that SAME file wherever the after appears: as the
+  full "after" slide AND inside the phone on the "result on your phone" slide, so
+  the on-screen result exactly matches the full-frame after.
+- **`appShot` = an iPhone mockup over the slide.** A slide can carry
+  `"appShot": "images/img_N.png"` (or a screenshot path) to render that image
+  inside a phone frame on top of the background. Use it to (a) show the after
+  image on a phone over the still-old room, and (b) show the App Store page on the
+  final CTA slide. Keep the phone small enough that the room stays visible.
+- **Per-slide background via `img`.** A slide may name its background file with
+  `"img": "img_N.png"` instead of being tied to its position (lets two slides
+  reuse one "after" photo).
+- **Proven 5-slide flow:** before/pain hook → "snapped a photo" → result on phone
+  (after image in the mockup, over the old room) → full after photo → after +
+  App Store phone (soft native CTA). Last slide = the renovated (after) room, not
+  the old one.
+- **Chat image attachments do NOT persist to disk here.** If the user attaches a
+  screenshot (e.g. an App Store page) to embed, extract it from the session
+  transcript's base64 (`~/.claude/projects/.../<session>.jsonl`) into the job dir,
+  then reference it as an `appShot`.
+
 ## Viral content direction (hooks & visuals) — MANDATORY when writing any concept
 You are an expert TikTok/Shorts viral content director for B2C AI mobile apps.
 Default project = an AI interior/exterior design app (VisuraAI-style).
