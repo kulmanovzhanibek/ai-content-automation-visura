@@ -69,6 +69,10 @@ Hard-won conventions for the `/slides` format. Follow all of them.
   slide reads as broken.
 - **Before/after must be the SAME room.** The "after" is an edit of the "before"
   base, so it's recognizably the same space transformed.
+- **The "after" must NOT invent architecture.** Redesign only finishes/furniture —
+  never add windows, doors or openings the "before" doesn't have (Gemini loves to
+  add a window over a sink). Keep the same walls, window/door positions and camera;
+  put an explicit "no window / keep the same walls and openings" in the edit prompt.
 - **Generate the AFTER first, then reuse it.** Render the final "after" image once
   (e.g. `img_5.png`), then reuse that SAME file wherever the after appears: as the
   full "after" slide AND inside the phone on the "result on your phone" slide, so
