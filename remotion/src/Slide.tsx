@@ -19,6 +19,9 @@ export const slideSchema = z.object({
   text: z.string(),
   textStyle: z.enum(["white", "black", "plain"]).default("white"),
   position: z.enum(["top", "center", "bottom"]).default("center"),
+  // optional app screenshot rendered inside an iPhone mockup over the bg
+  // (e.g. an App Store page on the final CTA slide)
+  appShot: z.string().nullable().default(null),
 });
 
 export type SlideProps = z.infer<typeof slideSchema>;
@@ -29,7 +32,7 @@ const STYLES = {
   plain: { box: null as string | null, color: "#ffffff" },
 };
 
-export const Slide: React.FC<SlideProps> = ({ bg, text, textStyle, position }) => {
+export const Slide: React.FC<SlideProps> = ({ bg, text, textStyle, position, appShot }) => {
   const s = STYLES[textStyle] ?? STYLES.white;
   const justify =
     position === "top" ? "flex-start" : position === "bottom" ? "flex-end" : "center";
@@ -48,6 +51,40 @@ export const Slide: React.FC<SlideProps> = ({ bg, text, textStyle, position }) =
           style={{ background: "linear-gradient(160deg, #16161d 0%, #3b2a4d 100%)" }}
         />
       )}
+      {appShot ? (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 80,
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 580,
+              aspectRatio: "924 / 2000",
+              background: "#0a0a0a",
+              borderRadius: 60,
+              padding: 12,
+              boxShadow: "0 34px 90px rgba(0,0,0,0.55)",
+            }}
+          >
+            <Img
+              src={staticFile(appShot)}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: 48,
+                display: "block",
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
       <AbsoluteFill
         style={{
           justifyContent: justify,

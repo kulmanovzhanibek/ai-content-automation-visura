@@ -75,6 +75,7 @@ export const RemotionRoot: React.FC = () => {
           text: "Your hook goes here",
           textStyle: "white" as const,
           position: "center" as const,
+          appShot: null,
         }}
       />
     </>

@@ -24,6 +24,8 @@ type Slide = {
   show_app?: boolean;
   position?: "top" | "center" | "bottom";
   textStyle?: "white" | "black" | "plain";
+  /** optional app screenshot (job-relative path) shown in an iPhone mockup */
+  appShot?: string;
 };
 type Concept = { title?: string; slides: Slide[] };
 
@@ -51,11 +53,16 @@ export function renderSlides(
     }
     const imgRel = `${jobId}/images/img_${n}.png`;
     const bg = existsSync(path.join(jobDir, "images", `img_${n}.png`)) ? imgRel : null;
+    const appShot =
+      slide.appShot && existsSync(path.join(jobDir, slide.appShot))
+        ? `${jobId}/${slide.appShot}`
+        : null;
     const props = {
       bg,
       text: slide.text,
       textStyle: slide.textStyle ?? defaults.style ?? "white",
       position: slide.position ?? defaults.position ?? "center",
+      appShot,
     };
     const propsPath = path.join(outDir, `.props_${n}.json`);
     writeFileSync(propsPath, JSON.stringify(props));
