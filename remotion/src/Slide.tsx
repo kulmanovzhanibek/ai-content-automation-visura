@@ -64,12 +64,12 @@ export const Slide: React.FC<SlideProps> = ({ bg, text, textStyle, position, app
         >
           <div
             style={{
-              width: 580,
+              width: 430,
               aspectRatio: "924 / 2000",
               background: "#0a0a0a",
-              borderRadius: 60,
-              padding: 12,
-              boxShadow: "0 34px 90px rgba(0,0,0,0.55)",
+              borderRadius: 46,
+              padding: 10,
+              boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
             }}
           >
             <Img
@@ -78,7 +78,7 @@ export const Slide: React.FC<SlideProps> = ({ bg, text, textStyle, position, app
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                borderRadius: 48,
+                borderRadius: 38,
                 display: "block",
               }}
             />

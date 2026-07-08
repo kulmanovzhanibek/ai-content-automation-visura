@@ -24,6 +24,8 @@ type Slide = {
   show_app?: boolean;
   position?: "top" | "center" | "bottom";
   textStyle?: "white" | "black" | "plain";
+  /** background image filename in images/ (defaults to img_<n>.png by position) */
+  img?: string;
   /** optional app screenshot (job-relative path) shown in an iPhone mockup */
   appShot?: string;
 };
@@ -51,8 +53,10 @@ export function renderSlides(
       written.push(outPath);
       return;
     }
-    const imgRel = `${jobId}/images/img_${n}.png`;
-    const bg = existsSync(path.join(jobDir, "images", `img_${n}.png`)) ? imgRel : null;
+    const imgFile = slide.img ?? `img_${n}.png`;
+    const bg = existsSync(path.join(jobDir, "images", imgFile))
+      ? `${jobId}/images/${imgFile}`
+      : null;
     const appShot =
       slide.appShot && existsSync(path.join(jobDir, slide.appShot))
         ? `${jobId}/${slide.appShot}`
