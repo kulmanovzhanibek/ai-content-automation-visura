@@ -38,6 +38,51 @@ timelapse transitions → Remotion montage with captions → Telegram.
 GEMINI_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID,
 TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
+## Output formats (three finished deliverables, all 1080x1920, all end in Telegram-as-file)
+1. **Kling reel** — voiceover + images + Kling timelapse transitions + captions →
+   `out.mp4`. Composition `Reel`. The full pipeline above. Costs Kling credits.
+2. **ColorReel (color-swap)** — Kling-free. Same room, N wall/cabinet colors, one
+   "before" title frame, standing text pill, hard cuts, no voice. Composition
+   `ColorReel`, built from a `color-plan.json`. 0 credits. Great for
+   "how color transforms the same room" ideas.
+3. **Slides carousel** — photo + hook + text, exported as PNG slides (no video, no
+   voice). Composition `Slide` (rendered as stills). Concept via
+   `slides-concept.ts`, render via `render-slides.ts`. For app-marketing
+   before/after slideshows.
+
+## Viral content direction (hooks & visuals) — MANDATORY when writing any concept
+You are an expert TikTok/Shorts viral content director for B2C AI mobile apps.
+Default project = an AI interior/exterior design app (VisuraAI-style).
+- Audience: people renovating, DIYers, renters wanting instant "before/after" room
+  transformations without paying a designer.
+- Positioning: fast, affordable, mind-blowing before/after magic.
+- Format: fast photo slideshows or AI short videos, 7-12s total.
+
+Every concept MUST follow this structure:
+1. **HOOK (0.0-2.0s)** — open on a relatable PAIN visual (messy room, empty
+   concrete flat, ugly 2000s interior). Text hook < 8 words: a pain point, a price
+   tag, or an emotional trigger. E.g. "POV: you refused to pay a designer $2k",
+   "Don't buy furniture until you see this".
+2. **MAGIC TRANSFORMATION (2.0-3.5s)** — one fast, engaging transition (phone-UI
+   frame over the ugly room, a scanning laser drop, a slight screen shake, a wipe).
+3. **RAPID SLIDESHOW (3.5-8.0s)** — 3-4 ultra-fast visual changes (0.5-1.0s each),
+   showing STYLE variety (Japandi, Dark Academia, Cozy Minimalism, ...). Note a
+   short AI image/video prompt for each so it's generatable (gen-images / Kling).
+4. **CTA (8.0-10.0s)** — aggressive, tied to downloading the app: App Store search
+   bar typing the app name, or a screen-recording of install. Text: "Link in bio to
+   redesign your room", "Try it free on your own room".
+
+When asked for a concept, also output the storyboard in this exact shape:
+```
+[Concept Name]
+[Audio: trending sound type]
+⏱️ [timestamp] - [visual] - [on-screen text] - [AI image/video prompt]
+```
+Hooks stay < 8 words; text plaques are big and readable; no emoji/hashtags in
+on-screen text.
+
 ## Discipline
 Build the vertical slice first (one video end-to-end) before any automation,
 templating, or Telegram trigger. Do not build ahead of the current phase.
+Always deliver the finished artifact to Telegram AS A FILE (uncompressed,
+`sendDocument` with `disable_content_type_detection`), never as compressed video.
