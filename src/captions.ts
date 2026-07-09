@@ -38,13 +38,26 @@ export function alignmentToCaptions(alignment: ElevenLabsAlignment): Caption[] {
     word = "";
   };
 
+  // Skip anything inside an angle-bracket tag, e.g. ElevenLabs `<break time="2.5s" />`
+  // pause directives — they carry timestamps but must never appear as caption text.
+  let inTag = false;
   for (let i = 0; i < characters.length; i++) {
-    if (/\s/.test(characters[i])) {
+    const c = characters[i];
+    if (c === "<") {
+      flush();
+      inTag = true;
+      continue;
+    }
+    if (inTag) {
+      if (c === ">") inTag = false;
+      continue;
+    }
+    if (/\s/.test(c)) {
       flush();
       continue;
     }
     if (!word) wordStart = starts[i];
-    word += characters[i];
+    word += c;
     wordEnd = ends[i];
   }
   flush();

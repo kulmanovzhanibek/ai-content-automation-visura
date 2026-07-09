@@ -24,6 +24,10 @@ timelapse transitions → Remotion montage with captions → Telegram.
 - All work under jobs/<job_id>/. Idempotent: skip steps whose output already exists.
 - Kling generations cost credits — never fire trial/throwaway jobs.
 - Remotion: solo/individual = free license.
+- Voiceover pacing: to spread a short "hook + idea names" script evenly across the
+  (N−1)×5s video so each name lands on its clip, insert ElevenLabs
+  `<break time="3.0s" />` pauses between phrases. `captions.ts` strips anything
+  inside `<...>` so break tags never show up as on-screen captions.
 
 ## APIs (verify exact params against current docs before coding)
 - Gemini image: @google/genai, Interactions API, model gemini-3.1-flash-image,
