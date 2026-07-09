@@ -64,6 +64,34 @@ export function alignmentToCaptions(alignment: ElevenLabsAlignment): Caption[] {
   return captions;
 }
 
+/**
+ * Merge word tokens into phrase-level captions: wherever the silence gap between
+ * one word's end and the next word's start exceeds `gapMs`, a new phrase starts.
+ * Each returned caption is one whole phrase — with `<break>`-paced voiceovers
+ * this makes every idea name its own subtitle. Each phrase after the first keeps
+ * a leading space so pages concatenate cleanly (matching the word-token convention).
+ */
+export function mergeIntoPhrases(captions: Caption[], gapMs = 700): Caption[] {
+  const phrases: Caption[] = [];
+  for (const c of captions) {
+    const last = phrases[phrases.length - 1];
+    const raw = c.text.replace(/^ /, "");
+    if (last && c.startMs - last.endMs <= gapMs) {
+      last.text += " " + raw;
+      last.endMs = c.endMs;
+    } else {
+      phrases.push({
+        text: (phrases.length > 0 ? " " : "") + raw,
+        startMs: c.startMs,
+        endMs: c.endMs,
+        timestampMs: c.startMs,
+        confidence: null,
+      });
+    }
+  }
+  return phrases;
+}
+
 // --- self-test (hardcoded sample, zero API calls) ---
 function runTest() {
   const sample: ElevenLabsAlignment = {
@@ -91,14 +119,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (arg === "--test") {
     runTest();
   } else if (arg) {
+    const args = process.argv.slice(2);
+    const phrasesMode = args.includes("--phrases");
+    const gapIdx = args.indexOf("--gap");
+    const gapMs = gapIdx >= 0 ? Number(args[gapIdx + 1]) : 700;
     const jobDir = path.join("jobs", arg);
     const timestamps = JSON.parse(readFileSync(path.join(jobDir, "timestamps.json"), "utf8"));
-    const captions = alignmentToCaptions(timestamps.alignment);
+    let captions = alignmentToCaptions(timestamps.alignment);
+    if (phrasesMode) captions = mergeIntoPhrases(captions, gapMs);
     const outPath = path.join(jobDir, "captions.json");
     writeFileSync(outPath, JSON.stringify(captions, null, 2));
-    console.log(`[captions] wrote ${outPath} (${captions.length} word tokens)`);
+    console.log(
+      `[captions] wrote ${outPath} (${captions.length} ${phrasesMode ? "phrase" : "word"} tokens)`
+    );
   } else {
-    console.log("Usage: tsx src/captions.ts <job_id>   # or --test");
+    console.log("Usage: tsx src/captions.ts <job_id> [--phrases] [--gap 700]   # or --test");
     process.exit(1);
   }
 }
