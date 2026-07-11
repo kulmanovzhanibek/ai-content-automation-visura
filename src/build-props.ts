@@ -36,8 +36,9 @@ export function buildProps(jobId: string): string {
   const preset = existsSync(presetPath) ? JSON.parse(readFileSync(presetPath, "utf8")) : {};
   const captionStyle = preset.caption_style ?? {};
   const footer = preset.footer_text ?? null;
+  const footerBottomOffset = preset.footer_bottom_offset ?? null;
 
-  const props = { clips, voice, captions, captionStyle, footer };
+  const props = { clips, voice, captions, captionStyle, footer, footerBottomOffset };
   const outPath = path.join(jobDir, "props.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(

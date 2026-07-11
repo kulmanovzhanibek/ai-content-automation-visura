@@ -33,11 +33,21 @@ export const reelSchema = z.object({
   // optional small persistent CTA footer (e.g. "comment X for the link"),
   // shown low on the frame so it's visible but never covers the scene or captions
   footer: z.string().nullable().optional(),
+  // px from the bottom of the 1920-tall frame for the footer. Kept high enough
+  // by default to clear the Instagram/TikTok bottom UI (username, music, caption).
+  footerBottomOffset: z.number().nullable().optional(),
 });
 
 export type ReelProps = z.infer<typeof reelSchema>;
 
-export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle, footer }) => {
+export const Reel: React.FC<ReelProps> = ({
+  clips,
+  voice,
+  captions,
+  captionStyle,
+  footer,
+  footerBottomOffset,
+}) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Series>
@@ -53,19 +63,27 @@ export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle
       </Series>
       {voice ? <Audio src={staticFile(voice)} /> : null}
       {captions.length > 0 ? <Captions captions={captions} styleOverrides={captionStyle} /> : null}
-      {footer ? <Footer text={footer} /> : null}
+      {footer ? <Footer text={footer} bottomOffset={footerBottomOffset ?? undefined} /> : null}
     </AbsoluteFill>
   );
 };
 
 /**
- * Small persistent CTA footer pinned near the bottom of the frame. Sits well
- * below the captions (which live near center via bottomOffset) and above the
- * very edge, so it reads clearly without covering the scene. A soft translucent
- * pill keeps it legible over any background. Each line of `text` is split on \n.
+ * Small persistent CTA footer pinned in the lower part of the frame. Sits well
+ * below the captions (which live near center via bottomOffset) yet high enough
+ * to clear the Instagram/TikTok bottom UI (username, music, caption) so it reads
+ * clearly without being covered. A soft translucent pill keeps it legible over
+ * any background. Each line of `text` is split on \n.
  */
-const Footer: React.FC<{ text: string }> = ({ text }) => (
-  <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 96 }}>
+const FOOTER_BOTTOM_OFFSET = 340;
+const Footer: React.FC<{ text: string; bottomOffset?: number }> = ({ text, bottomOffset }) => (
+  <AbsoluteFill
+    style={{
+      justifyContent: "flex-end",
+      alignItems: "center",
+      paddingBottom: bottomOffset ?? FOOTER_BOTTOM_OFFSET,
+    }}
+  >
     <div
       style={{
         maxWidth: "88%",
