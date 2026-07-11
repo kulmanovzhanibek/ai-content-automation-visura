@@ -30,13 +30,14 @@ export function buildProps(jobId: string): string {
     : [];
 
   // preset.json is copied into the job dir by /reel; its caption_style
-  // overrides the defaults baked into remotion/src/Captions.tsx
+  // overrides the defaults baked into remotion/src/Captions.tsx, and its
+  // optional footer_text renders as a small persistent CTA at the bottom.
   const presetPath = path.join(jobDir, "preset.json");
-  const captionStyle = existsSync(presetPath)
-    ? (JSON.parse(readFileSync(presetPath, "utf8")).caption_style ?? {})
-    : {};
+  const preset = existsSync(presetPath) ? JSON.parse(readFileSync(presetPath, "utf8")) : {};
+  const captionStyle = preset.caption_style ?? {};
+  const footer = preset.footer_text ?? null;
 
-  const props = { clips, voice, captions, captionStyle };
+  const props = { clips, voice, captions, captionStyle, footer };
   const outPath = path.join(jobDir, "props.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(

@@ -30,11 +30,14 @@ export const reelSchema = z.object({
       maxWidthPercent: z.number().optional(),
     })
     .optional(),
+  // optional small persistent CTA footer (e.g. "comment X for the link"),
+  // shown low on the frame so it's visible but never covers the scene or captions
+  footer: z.string().nullable().optional(),
 });
 
 export type ReelProps = z.infer<typeof reelSchema>;
 
-export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle }) => {
+export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle, footer }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Series>
@@ -50,6 +53,39 @@ export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle
       </Series>
       {voice ? <Audio src={staticFile(voice)} /> : null}
       {captions.length > 0 ? <Captions captions={captions} styleOverrides={captionStyle} /> : null}
+      {footer ? <Footer text={footer} /> : null}
     </AbsoluteFill>
   );
 };
+
+/**
+ * Small persistent CTA footer pinned near the bottom of the frame. Sits well
+ * below the captions (which live near center via bottomOffset) and above the
+ * very edge, so it reads clearly without covering the scene. A soft translucent
+ * pill keeps it legible over any background. Each line of `text` is split on \n.
+ */
+const Footer: React.FC<{ text: string }> = ({ text }) => (
+  <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 96 }}>
+    <div
+      style={{
+        maxWidth: "88%",
+        textAlign: "center",
+        fontFamily: "'Montserrat', Arial, Helvetica, sans-serif",
+        fontSize: 34,
+        fontWeight: 600,
+        lineHeight: 1.32,
+        color: "white",
+        WebkitTextStroke: "3px black",
+        paintOrder: "stroke fill",
+        textShadow: "0 2px 10px rgba(0,0,0,0.55)",
+        background: "rgba(0,0,0,0.32)",
+        borderRadius: 18,
+        padding: "12px 22px",
+      }}
+    >
+      {text.split("\n").map((line, i) => (
+        <div key={i}>{line}</div>
+      ))}
+    </div>
+  </AbsoluteFill>
+);
