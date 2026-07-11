@@ -9,6 +9,8 @@
     "tts": "tsx src/tts.ts",
     "captions": "tsx src/captions.ts",
     "telegram": "tsx src/telegram.ts",
+    "slides-concept": "tsx src/slides-concept.ts",
+    "render-slides": "tsx src/render-slides.ts",
     "test:captions": "tsx src/captions.ts --test",
     "test:gen-images": "tsx src/gen-images.ts --test",
     "typecheck": "tsc --noEmit"
@@ -25,6 +27,7 @@
     "@google/genai": "^2.10.0",
     "@remotion/captions": "^4.0.484",
     "@remotion/cli": "^4.0.484",
+    "@remotion/transitions": "^4.0.484",
     "dotenv": "^17.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

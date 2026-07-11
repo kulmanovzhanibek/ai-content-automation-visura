@@ -6,16 +6,22 @@
  * supported values in the @google/genai ImageConfig type. Kling inherits the
  * aspect ratio from the input image, so this must stay 9:16.
  *
- * Two modes:
+ * Three modes:
  *   default    — each prompt is an independent text-to-image generation
  *   --base-first (edit mode) — prompt 1 generates the BASE image; every following
  *                prompt EDITS the base image (base PNG is sent as input together
  *                with the prompt). Use this when all frames must share the exact
  *                same space/architecture and only the contents change.
+ *   --chain (edit mode) — prompt 1 generates the first image; every following
+ *                prompt EDITS THE PREVIOUS frame (img_{i-1} PNG is sent as input).
+ *                Use this when each frame must build on the last with running
+ *                continuity — e.g. a renovation timelapse where furniture placed
+ *                in one frame must stay in the exact same spot in the next.
  *
  * Usage:
  *   npx tsx src/gen-images.ts <job_id> "prompt 1" "prompt 2" ...
  *   npx tsx src/gen-images.ts <job_id> --base-first "base prompt" "edit 1" "edit 2" ...
+ *   npx tsx src/gen-images.ts <job_id> --chain "first prompt" "edit 1" "edit 2" ...
  *   npx tsx src/gen-images.ts --test          # ONE image → jobs/test-image/images/img_1.png
  */
 import "dotenv/config";
@@ -25,7 +31,7 @@ import path from "node:path";
 
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
 
-type GenOptions = { baseFirst?: boolean };
+type GenOptions = { baseFirst?: boolean; chain?: boolean };
 
 export async function genImages(
   jobId: string,
@@ -51,8 +57,15 @@ export async function genImages(
       continue;
     }
 
-    const isEdit = options.baseFirst && i > 0;
-    // In edit mode the base image carries composition and aspect ratio;
+    const isEdit = (options.baseFirst || options.chain) && i > 0;
+    // In --base-first every edit references img_1; in --chain each edit
+    // references the immediately previous frame (img_i for output img_{i+1}),
+    // so running continuity (e.g. fixed furniture positions) is preserved.
+    const inputPath = options.chain ? path.join(outDir, `img_${i}.png`) : basePath;
+    if (isEdit && !existsSync(inputPath)) {
+      throw new Error(`Edit input missing: ${inputPath} (needed to generate img_${i + 1}.png)`);
+    }
+    // In edit mode the input image carries composition and aspect ratio;
     // the prompt instructs what to change and what must stay identical.
     const contents = isEdit
       ? [
@@ -62,7 +75,7 @@ export async function genImages(
               {
                 inlineData: {
                   mimeType: "image/png",
-                  data: readFileSync(basePath).toString("base64"),
+                  data: readFileSync(inputPath).toString("base64"),
                 },
               },
               { text: prompts[i] },

@@ -19,6 +19,10 @@ import { fetch } from "./proxy.ts";
 
 const MODEL_ID = process.env.ELEVENLABS_MODEL_ID ?? "eleven_multilingual_v2";
 const OUTPUT_FORMAT = "mp3_44100_128";
+// Optional deterministic speech-rate control (ElevenLabs voice_settings.speed,
+// range 0.7–1.2; 1.0 = default). Lets a reel fit its narration to a fixed video
+// length instead of fighting the model's variable pacing via word count.
+const SPEED = process.env.ELEVENLABS_SPEED ? Number(process.env.ELEVENLABS_SPEED) : undefined;
 
 export type ElevenLabsAlignment = {
   characters: string[];
@@ -45,12 +49,15 @@ export async function tts(
     return { voicePath, timestampsPath };
   }
 
-  console.log(`[tts] model=${MODEL_ID} voice=${voiceId} chars=${text.length} ...`);
+  const speedNote = SPEED !== undefined && !Number.isNaN(SPEED) ? ` speed=${SPEED}` : "";
+  console.log(`[tts] model=${MODEL_ID} voice=${voiceId} chars=${text.length}${speedNote} ...`);
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=${OUTPUT_FORMAT}`;
+  const body: Record<string, unknown> = { text, model_id: MODEL_ID };
+  if (SPEED !== undefined && !Number.isNaN(SPEED)) body.voice_settings = { speed: SPEED };
   const res = await fetch(url, {
     method: "POST",
     headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ text, model_id: MODEL_ID }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     throw new Error(`ElevenLabs ${res.status}: ${await res.text()}`);
