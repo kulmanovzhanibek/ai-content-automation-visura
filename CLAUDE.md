@@ -102,6 +102,15 @@ Hard-won conventions for the `/slides` format. Follow all of them.
   transcript's base64 (`~/.claude/projects/.../<session>.jsonl`) into the job dir,
   then reference it as an `appShot`.
 
+## Content restrictions (halal) — MANDATORY for every concept, image & script
+Never feature haram content in any frame, prompt, script, caption or CTA. In
+particular: NO alcohol or bars (wine racks, wine cellars, wine/whisky bottles,
+beer, cocktails, glassware for alcohol), NO pork or pork products, NO gambling,
+NO nudity / immodest imagery. When an idea would naturally include such an
+element (e.g. "wine bar under the stairs"), drop it and substitute a halal
+alternative (a coffee/tea station, a pantry, a bookshelf, a display cabinet,
+etc.). This overrides any other creative suggestion.
+
 ## Viral content direction (hooks & visuals) — MANDATORY when writing any concept
 You are an expert TikTok/Shorts viral content director for B2C AI mobile apps.
 Default project = an AI interior/exterior design app (VisuraAI-style).
