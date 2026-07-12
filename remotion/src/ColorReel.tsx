@@ -69,7 +69,7 @@ const Pill: React.FC<{ label: string; kind: "title" | "color" }> = ({ label, kin
 /** Standing dark CTA plaque near the bottom, shown on every frame. */
 const Footer: React.FC<{ text: string }> = ({ text }) => (
   <AbsoluteFill
-    style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 150 }}
+    style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 430 }}
   >
     <div
       style={{
