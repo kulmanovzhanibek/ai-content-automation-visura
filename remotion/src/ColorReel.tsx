@@ -24,6 +24,9 @@ export const colorReelSchema = z.object({
       durationInFrames: z.number(),
     })
   ),
+  // optional CTA plaque shown on every frame near the bottom (dark translucent
+  // rounded box, white bold text). Use "\n" to split into lines.
+  footer: z.string().nullable().default(null),
 });
 
 export type ColorReelProps = z.infer<typeof colorReelSchema>;
@@ -63,7 +66,33 @@ const Pill: React.FC<{ label: string; kind: "title" | "color" }> = ({ label, kin
   );
 };
 
-export const ColorReel: React.FC<ColorReelProps> = ({ frames }) => {
+/** Standing dark CTA plaque near the bottom, shown on every frame. */
+const Footer: React.FC<{ text: string }> = ({ text }) => (
+  <AbsoluteFill
+    style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 150 }}
+  >
+    <div
+      style={{
+        maxWidth: "90%",
+        background: "rgba(20,20,22,0.5)",
+        borderRadius: 22,
+        padding: "22px 46px",
+        textAlign: "center",
+        whiteSpace: "pre-line",
+        fontFamily: "'Montserrat', Arial, Helvetica, sans-serif",
+        fontWeight: 700,
+        color: "#ffffff",
+        fontSize: 34,
+        lineHeight: 1.4,
+        textShadow: "0 2px 10px rgba(0,0,0,0.45)",
+      }}
+    >
+      {text}
+    </div>
+  </AbsoluteFill>
+);
+
+export const ColorReel: React.FC<ColorReelProps> = ({ frames, footer }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Series>
@@ -79,6 +108,7 @@ export const ColorReel: React.FC<ColorReelProps> = ({ frames }) => {
           </Series.Sequence>
         ))}
       </Series>
+      {footer ? <Footer text={footer} /> : null}
     </AbsoluteFill>
   );
 };

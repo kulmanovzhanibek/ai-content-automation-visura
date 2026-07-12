@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
 type PlanFrame = { img: string; label: string; kind?: "title" | "color"; seconds: number };
-type Plan = { fps?: number; frames: PlanFrame[] };
+type Plan = { fps?: number; frames: PlanFrame[]; footer?: string | null };
 
 export function buildColorProps(jobId: string): string {
   const jobDir = path.join("jobs", jobId);
@@ -48,7 +48,8 @@ export function buildColorProps(jobId: string): string {
   });
 
   const outPath = path.join(jobDir, "props-color.json");
-  writeFileSync(outPath, JSON.stringify({ frames }, null, 2));
+  const footer = plan.footer ?? null;
+  writeFileSync(outPath, JSON.stringify({ frames, footer }, null, 2));
   const totalS = frames.reduce((s, f) => s + f.durationInFrames, 0) / fps;
   console.log(
     `[build-color-props] wrote ${outPath}: ${frames.length} frame(s), total ${totalS.toFixed(1)}s @ ${fps}fps`
