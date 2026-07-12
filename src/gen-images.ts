@@ -1,10 +1,15 @@
 /**
  * gen-images: prompts[] + job_id → jobs/<job_id>/images/img_N.png
  *
- * Gemini image generation (Nano Banana 2), 9:16 vertical.
- * Aspect ratio is set via config.imageConfig.aspectRatio — "9:16" is one of the
- * supported values in the @google/genai ImageConfig type. Kling inherits the
- * aspect ratio from the input image, so this must stay 9:16.
+ * Vertex AI image generation (Gemini "Nano Banana 2"), 9:16 vertical.
+ * Aspect ratio is set via generationConfig.imageConfig.aspectRatio — "9:16".
+ * Kling inherits the aspect ratio from the input image, so this must stay 9:16.
+ *
+ * Auth: Vertex uses a GCP service account. Put the WHOLE service-account JSON
+ * (one line) in GCP_SERVICE_ACCOUNT; we mint a short-lived OAuth access token
+ * from it (getGoogleAccessToken) and call the Vertex REST endpoint with it.
+ * The project id is read from the service account (override: GCP_PROJECT_ID),
+ * the region from GCP_LOCATION (default "global").
  *
  * Three modes:
  *   default    — each prompt is an independent text-to-image generation
@@ -25,11 +30,77 @@
  *   npx tsx src/gen-images.ts --test          # ONE image → jobs/test-image/images/img_1.png
  */
 import "dotenv/config";
-import { GoogleGenAI } from "@google/genai";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
+const LOCATION = process.env.GCP_LOCATION ?? "global";
+
+/**
+ * Mint a short-lived GCP OAuth access token from a service-account JSON string.
+ * Uses Web Crypto (globally available in Node 20+) to RS256-sign a JWT, then
+ * exchanges it at Google's token endpoint for a cloud-platform access token.
+ */
+async function getGoogleAccessToken(serviceAccountJsonStr: string): Promise<string> {
+  const sa = JSON.parse(serviceAccountJsonStr);
+
+  const encodeBase64Url = (str: string) =>
+    btoa(str).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const encodeJsonBase64Url = (obj: any) => encodeBase64Url(JSON.stringify(obj));
+
+  const header = { alg: "RS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const claimSet = {
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  };
+
+  const jwtString = `${encodeJsonBase64Url(header)}.${encodeJsonBase64Url(claimSet)}`;
+  const pemContents = sa.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s/g, "");
+  const binaryDer = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    binaryDer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(jwtString)
+  );
+  const signedJwt = `${jwtString}.${encodeBase64Url(
+    String.fromCharCode(...new Uint8Array(signature))
+  )}`;
+
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: signedJwt,
+    }),
+  });
+  const tokenData = await tokenResponse.json();
+  if (!tokenResponse.ok) throw new Error(`Token error: ${JSON.stringify(tokenData)}`);
+  return tokenData.access_token;
+}
+
+/** Vertex generateContent REST endpoint for a publisher model. */
+function vertexEndpoint(projectId: string, model: string): string {
+  const host =
+    LOCATION === "global"
+      ? "aiplatform.googleapis.com"
+      : `${LOCATION}-aiplatform.googleapis.com`;
+  return `https://${host}/v1/projects/${projectId}/locations/${LOCATION}/publishers/google/models/${model}:generateContent`;
+}
 
 type GenOptions = { baseFirst?: boolean; chain?: boolean };
 
@@ -38,11 +109,19 @@ export async function genImages(
   prompts: string[],
   options: GenOptions = {}
 ): Promise<string[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set (see .env.example)");
+  const saJson = process.env.GCP_SERVICE_ACCOUNT;
+  if (!saJson) throw new Error("GCP_SERVICE_ACCOUNT is not set (see .env.example)");
   if (prompts.length === 0) throw new Error("No prompts given");
 
-  const ai = new GoogleGenAI({ apiKey });
+  const projectId =
+    process.env.GCP_PROJECT_ID ?? (JSON.parse(saJson).project_id as string | undefined);
+  if (!projectId)
+    throw new Error("No GCP project id (set GCP_PROJECT_ID or include project_id in GCP_SERVICE_ACCOUNT)");
+
+  // Mint one access token for the whole run (valid ~1h; a job never runs that long).
+  const accessToken = await getGoogleAccessToken(saJson);
+  const endpoint = vertexEndpoint(projectId, IMAGE_MODEL);
+
   const outDir = path.join("jobs", jobId, "images");
   mkdirSync(outDir, { recursive: true });
 
@@ -67,38 +146,44 @@ export async function genImages(
     }
     // In edit mode the input image carries composition and aspect ratio;
     // the prompt instructs what to change and what must stay identical.
-    const contents = isEdit
+    const parts = isEdit
       ? [
           {
-            role: "user",
-            parts: [
-              {
-                inlineData: {
-                  mimeType: "image/png",
-                  data: readFileSync(inputPath).toString("base64"),
-                },
-              },
-              { text: prompts[i] },
-            ],
+            inlineData: {
+              mimeType: "image/png",
+              data: readFileSync(inputPath).toString("base64"),
+            },
           },
+          { text: prompts[i] },
         ]
-      : prompts[i];
+      : [{ text: prompts[i] }];
 
     console.log(
-      `[gen-images] ${i + 1}/${prompts.length} ${isEdit ? "edit-of-base" : "text-to-image"} model=${IMAGE_MODEL} 9:16 ...`
+      `[gen-images] ${i + 1}/${prompts.length} ${isEdit ? "edit-of-base" : "text-to-image"} model=${IMAGE_MODEL} 9:16 (vertex ${LOCATION}) ...`
     );
-    const response = await ai.models.generateContent({
-      model: IMAGE_MODEL,
-      contents,
-      config: {
-        imageConfig: { aspectRatio: "9:16" },
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts }],
+        generationConfig: { imageConfig: { aspectRatio: "9:16" } },
+      }),
     });
 
-    const parts = response.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find((p) => p.inlineData?.data);
+    const data: any = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        `Vertex error for prompt ${i + 1} (HTTP ${response.status}): ${JSON.stringify(data)}`
+      );
+    }
+
+    const respParts = data.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = respParts.find((p: any) => p.inlineData?.data);
     if (!imagePart?.inlineData?.data) {
-      const text = parts.map((p) => p.text).filter(Boolean).join(" ");
+      const text = respParts.map((p: any) => p.text).filter(Boolean).join(" ");
       throw new Error(
         `No image in response for prompt ${i + 1}. Model said: ${text || "(nothing)"}`
       );
@@ -126,13 +211,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   } else {
     const jobId = args[0];
     const baseFirst = args.includes("--base-first");
-    const prompts = args.slice(1).filter((a) => a !== "--base-first");
+    const chain = args.includes("--chain");
+    const prompts = args.slice(1).filter((a) => a !== "--base-first" && a !== "--chain");
     if (!jobId || prompts.length === 0) {
-      console.log('Usage: tsx src/gen-images.ts <job_id> [--base-first] "prompt 1" "prompt 2" ...');
+      console.log('Usage: tsx src/gen-images.ts <job_id> [--base-first|--chain] "prompt 1" "prompt 2" ...');
       console.log("       tsx src/gen-images.ts --test");
       process.exit(1);
     }
-    genImages(jobId, prompts, { baseFirst }).catch((e) => {
+    genImages(jobId, prompts, { baseFirst, chain }).catch((e) => {
       console.error("[gen-images] FAILED:", e.message);
       process.exit(1);
     });
