@@ -9,7 +9,7 @@
  * (one line) in GCP_SERVICE_ACCOUNT; we mint a short-lived OAuth access token
  * from it (getGoogleAccessToken) and call the Vertex REST endpoint with it.
  * The project id is read from the service account (override: GCP_PROJECT_ID),
- * the region from GCP_LOCATION (default "global").
+ * the region from GCP_LOCATION (default "us-central1").
  *
  * Three modes:
  *   default    — each prompt is an independent text-to-image generation
@@ -34,7 +34,7 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
-const LOCATION = process.env.GCP_LOCATION ?? "global";
+const LOCATION = process.env.GCP_LOCATION ?? "us-central1";
 
 /**
  * Mint a short-lived GCP OAuth access token from a service-account JSON string.
@@ -99,7 +99,8 @@ function vertexEndpoint(projectId: string, model: string): string {
     LOCATION === "global"
       ? "aiplatform.googleapis.com"
       : `${LOCATION}-aiplatform.googleapis.com`;
-  return `https://${host}/v1/projects/${projectId}/locations/${LOCATION}/publishers/google/models/${model}:generateContent`;
+  // v1beta1: needed for generationConfig.imageConfig (aspect-ratio) support.
+  return `https://${host}/v1beta1/projects/${projectId}/locations/${LOCATION}/publishers/google/models/${model}:generateContent`;
 }
 
 type GenOptions = { baseFirst?: boolean; chain?: boolean };
