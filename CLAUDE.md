@@ -44,7 +44,7 @@ timelapse transitions → Remotion montage with captions → Telegram.
 ## Env (.env)
 GCP_SERVICE_ACCOUNT (Vertex service-account JSON, one line; used for image gen),
 ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
-Optional: GCP_PROJECT_ID, GCP_LOCATION (default us-central1), GEMINI_IMAGE_MODEL.
+Optional: GCP_PROJECT_ID, GCP_LOCATION (default global), GEMINI_IMAGE_MODEL.
 
 ## Output formats & commands (all 1080x1920, all end in Telegram-as-file)
 One slash command per format — each runs the whole flow from the idea to the

@@ -9,7 +9,8 @@
  * (one line) in GCP_SERVICE_ACCOUNT; we mint a short-lived OAuth access token
  * from it (getGoogleAccessToken) and call the Vertex REST endpoint with it.
  * The project id is read from the service account (override: GCP_PROJECT_ID),
- * the region from GCP_LOCATION (default "us-central1").
+ * the region from GCP_LOCATION (default "global" — where the newer Gemini image
+ * models are served; set e.g. "us-central1" for region-pinned models).
  *
  * Three modes:
  *   default    — each prompt is an independent text-to-image generation
@@ -34,7 +35,7 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
-const LOCATION = process.env.GCP_LOCATION ?? "us-central1";
+const LOCATION = process.env.GCP_LOCATION ?? "global";
 
 /**
  * Mint a short-lived GCP OAuth access token from a service-account JSON string.
