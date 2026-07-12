@@ -10,9 +10,10 @@
   "transition_prompt_template": "Playful stop-motion style timelapse in one single continuous shot: {WHAT_CHANGES}, piece by piece. Dynamic but seamless, evenly paced across the whole clip, ending exactly at the final frame. No scene cuts, no flashes. Camera perfectly static on a tripod, identical framing throughout. Constant natural lighting. No people.",
   "caption_style": {
     "fontSize": 64,
-    "bottomOffset": 780,
+    "bottomOffset": 430,
     "maxWidthPercent": 82,
-    "combineTokensWithinMilliseconds": 1400
+    "combineTokensWithinMilliseconds": 500
   },
+  "captions_mode": "--phrases",
   "telegram_caption": "Space transformation ideas 👆 Which one would you pick?"
 }
