@@ -58,7 +58,8 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={({ props }) => ({
           durationInFrames: Math.max(
             1,
-            props.frames.reduce((s, f) => s + Math.max(1, f.durationInFrames), 0)
+            props.frames.reduce((s, f) => s + Math.max(1, f.durationInFrames), 0) +
+              Math.max(0, props.outroDurationInFrames ?? 0)
           ),
         })}
       />

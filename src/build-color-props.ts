@@ -25,7 +25,14 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
 type PlanFrame = { img: string; label: string; kind?: "title" | "color"; seconds: number };
-type Plan = { fps?: number; frames: PlanFrame[]; footer?: string | null };
+type Plan = {
+  fps?: number;
+  frames: PlanFrame[];
+  footer?: string | null;
+  voice?: string | null;
+  outroVideo?: string | null;
+  outroSeconds?: number;
+};
 
 export function buildColorProps(jobId: string): string {
   const jobDir = path.join("jobs", jobId);
@@ -49,10 +56,36 @@ export function buildColorProps(jobId: string): string {
 
   const outPath = path.join(jobDir, "props-color.json");
   const footer = plan.footer ?? null;
-  writeFileSync(outPath, JSON.stringify({ frames, footer }, null, 2));
-  const totalS = frames.reduce((s, f) => s + f.durationInFrames, 0) / fps;
+
+  // optional voiceover audio (played across styles + outro)
+  let voice: string | null = null;
+  if (plan.voice) {
+    if (!existsSync(path.join(jobDir, plan.voice)))
+      throw new Error(`Voice not found: ${plan.voice}`);
+    voice = `${jobId}/${plan.voice}`;
+  }
+
+  // optional appended outro video (e.g. app screen recording)
+  let outroVideo: string | null = null;
+  let outroDurationInFrames = 0;
+  if (plan.outroVideo) {
+    if (!existsSync(path.join(jobDir, plan.outroVideo)))
+      throw new Error(`Outro video not found: ${plan.outroVideo}`);
+    outroVideo = `${jobId}/${plan.outroVideo}`;
+    outroDurationInFrames = Math.max(1, Math.round((plan.outroSeconds ?? 5) * fps));
+  }
+
+  writeFileSync(
+    outPath,
+    JSON.stringify({ frames, footer, voice, outroVideo, outroDurationInFrames }, null, 2)
+  );
+  const totalS =
+    (frames.reduce((s, f) => s + f.durationInFrames, 0) + outroDurationInFrames) / fps;
   console.log(
-    `[build-color-props] wrote ${outPath}: ${frames.length} frame(s), total ${totalS.toFixed(1)}s @ ${fps}fps`
+    `[build-color-props] wrote ${outPath}: ${frames.length} frame(s)` +
+      (outroVideo ? ` + outro ${(outroDurationInFrames / fps).toFixed(1)}s` : "") +
+      (voice ? " + voice" : "") +
+      `, total ${totalS.toFixed(1)}s @ ${fps}fps`
   );
   return outPath;
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Img, Series, staticFile } from "remotion";
+import { AbsoluteFill, Audio, Img, OffthreadVideo, Series, staticFile } from "remotion";
 import { z } from "zod";
 import "@fontsource/montserrat/800.css";
 import "@fontsource/montserrat/700.css";
@@ -27,6 +27,12 @@ export const colorReelSchema = z.object({
   // optional CTA plaque shown on every frame near the bottom (dark translucent
   // rounded box, white bold text). Use "\n" to split into lines.
   footer: z.string().nullable().default(null),
+  // optional voiceover played across the whole reel (styles + outro)
+  voice: z.string().nullable().default(null),
+  // optional video appended after the frames (e.g. an app screen recording as
+  // the CTA payoff). Shown letterboxed over a blurred fill of itself.
+  outroVideo: z.string().nullable().default(null),
+  outroDurationInFrames: z.number().default(0),
 });
 
 export type ColorReelProps = z.infer<typeof colorReelSchema>;
@@ -92,7 +98,37 @@ const Footer: React.FC<{ text: string }> = ({ text }) => (
   </AbsoluteFill>
 );
 
-export const ColorReel: React.FC<ColorReelProps> = ({ frames, footer }) => {
+/** The appended outro video (e.g. app screen recording), letterboxed on a
+ *  blurred fill of itself so a narrow phone recording has no black bars. */
+const OutroVideo: React.FC<{ src: string }> = ({ src }) => (
+  <AbsoluteFill style={{ backgroundColor: "black" }}>
+    <OffthreadVideo
+      src={staticFile(src)}
+      muted
+      style={{
+        position: "absolute",
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        filter: "blur(48px) brightness(0.6)",
+        transform: "scale(1.15)",
+      }}
+    />
+    <OffthreadVideo
+      src={staticFile(src)}
+      muted
+      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+    />
+  </AbsoluteFill>
+);
+
+export const ColorReel: React.FC<ColorReelProps> = ({
+  frames,
+  footer,
+  voice,
+  outroVideo,
+  outroDurationInFrames,
+}) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Series>
@@ -107,8 +143,14 @@ export const ColorReel: React.FC<ColorReelProps> = ({ frames, footer }) => {
             </AbsoluteFill>
           </Series.Sequence>
         ))}
+        {outroVideo && outroDurationInFrames > 0 ? (
+          <Series.Sequence durationInFrames={outroDurationInFrames}>
+            <OutroVideo src={outroVideo} />
+          </Series.Sequence>
+        ) : null}
       </Series>
       {footer ? <Footer text={footer} /> : null}
+      {voice ? <Audio src={staticFile(voice)} /> : null}
     </AbsoluteFill>
   );
 };
