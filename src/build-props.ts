@@ -44,22 +44,25 @@ export function buildProps(jobId: string): string {
   let outroVideo: string | null = null;
   let outroVideoBg: string | null = null;
   let outroDurationInFrames = 0;
+  let outroText: string | null = null;
   const outroPath = path.join(jobDir, "outro.json");
   if (existsSync(outroPath)) {
     const cfg = JSON.parse(readFileSync(outroPath, "utf8")) as {
       video: string;
       videoBg?: string;
       seconds?: number;
+      text?: string;
     };
     if (cfg.video && existsSync(path.join(jobDir, cfg.video))) {
       outroVideo = `${jobId}/${cfg.video}`;
       outroDurationInFrames = Math.max(1, Math.round((cfg.seconds ?? 5) * FPS));
       if (cfg.videoBg && existsSync(path.join(jobDir, cfg.videoBg)))
         outroVideoBg = `${jobId}/${cfg.videoBg}`;
+      outroText = cfg.text ?? null;
     }
   }
 
-  const props = { clips, voice, captions, captionStyle, outroVideo, outroVideoBg, outroDurationInFrames };
+  const props = { clips, voice, captions, captionStyle, outroVideo, outroVideoBg, outroDurationInFrames, outroText };
   const outPath = path.join(jobDir, "props.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(
