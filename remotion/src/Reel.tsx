@@ -30,11 +30,59 @@ export const reelSchema = z.object({
       maxWidthPercent: z.number().optional(),
     })
     .optional(),
+  // optional video appended after the clips (e.g. an app screen recording as
+  // the CTA payoff), letterboxed over a blurred fill (a separate file copy).
+  outroVideo: z.string().nullable().default(null),
+  outroVideoBg: z.string().nullable().default(null),
+  outroDurationInFrames: z.number().default(0),
 });
 
 export type ReelProps = z.infer<typeof reelSchema>;
 
-export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle }) => {
+/** Appended outro video, letterboxed on a blurred fill so a narrow phone
+ *  recording has no black bars. Falls back to a dark background. */
+const OutroVideo: React.FC<{ src: string; bgSrc: string | null }> = ({ src, bgSrc }) => (
+  <AbsoluteFill style={{ backgroundColor: "#141416" }}>
+    {bgSrc ? (
+      <OffthreadVideo
+        src={staticFile(bgSrc)}
+        muted
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          filter: "blur(48px) brightness(0.55)",
+          transform: "scale(1.15)",
+          zIndex: 0,
+        }}
+      />
+    ) : null}
+    <OffthreadVideo
+      src={staticFile(src)}
+      muted
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+        zIndex: 1,
+      }}
+    />
+  </AbsoluteFill>
+);
+
+export const Reel: React.FC<ReelProps> = ({
+  clips,
+  voice,
+  captions,
+  captionStyle,
+  outroVideo,
+  outroVideoBg,
+  outroDurationInFrames,
+}) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       <Series>
@@ -47,6 +95,11 @@ export const Reel: React.FC<ReelProps> = ({ clips, voice, captions, captionStyle
             />
           </Series.Sequence>
         ))}
+        {outroVideo && outroDurationInFrames > 0 ? (
+          <Series.Sequence durationInFrames={outroDurationInFrames}>
+            <OutroVideo src={outroVideo} bgSrc={outroVideoBg ?? null} />
+          </Series.Sequence>
+        ) : null}
       </Series>
       {voice ? <Audio src={staticFile(voice)} /> : null}
       {captions.length > 0 ? <Captions captions={captions} styleOverrides={captionStyle} /> : null}

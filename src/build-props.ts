@@ -13,6 +13,8 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
+const FPS = 30; // matches remotion/src/Reel.tsx
+
 export function buildProps(jobId: string): string {
   const jobDir = path.join("jobs", jobId);
   const clipsDir = path.join(jobDir, "clips");
@@ -36,11 +38,34 @@ export function buildProps(jobId: string): string {
     ? (JSON.parse(readFileSync(presetPath, "utf8")).caption_style ?? {})
     : {};
 
-  const props = { clips, voice, captions, captionStyle };
+  // optional outro video (e.g. app screen recording) appended after the clips.
+  // Configured via jobs/<job>/outro.json: { video, videoBg?, seconds }.
+  // videoBg must be a SEPARATE file copy (Remotion dedupes identical srcs).
+  let outroVideo: string | null = null;
+  let outroVideoBg: string | null = null;
+  let outroDurationInFrames = 0;
+  const outroPath = path.join(jobDir, "outro.json");
+  if (existsSync(outroPath)) {
+    const cfg = JSON.parse(readFileSync(outroPath, "utf8")) as {
+      video: string;
+      videoBg?: string;
+      seconds?: number;
+    };
+    if (cfg.video && existsSync(path.join(jobDir, cfg.video))) {
+      outroVideo = `${jobId}/${cfg.video}`;
+      outroDurationInFrames = Math.max(1, Math.round((cfg.seconds ?? 5) * FPS));
+      if (cfg.videoBg && existsSync(path.join(jobDir, cfg.videoBg)))
+        outroVideoBg = `${jobId}/${cfg.videoBg}`;
+    }
+  }
+
+  const props = { clips, voice, captions, captionStyle, outroVideo, outroVideoBg, outroDurationInFrames };
   const outPath = path.join(jobDir, "props.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(
-    `[build-props] wrote ${outPath}: ${clips.length} clip(s), voice=${voice ?? "none"}, ${captions.length} caption tokens`
+    `[build-props] wrote ${outPath}: ${clips.length} clip(s)` +
+      (outroVideo ? ` + outro ${(outroDurationInFrames / FPS).toFixed(1)}s` : "") +
+      `, voice=${voice ?? "none"}, ${captions.length} caption tokens`
   );
   return outPath;
 }

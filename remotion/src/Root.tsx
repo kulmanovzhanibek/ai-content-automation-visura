@@ -16,9 +16,18 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
         fps={FPS}
         durationInFrames={5 * FPS}
-        defaultProps={{ clips: [], voice: null, captions: [] }}
+        defaultProps={{
+          clips: [],
+          voice: null,
+          captions: [],
+          outroVideo: null,
+          outroVideoBg: null,
+          outroDurationInFrames: 0,
+        }}
         calculateMetadata={({ props }) => ({
-          durationInFrames: Math.max(1, props.clips.length) * CLIP_DURATION_S * FPS,
+          durationInFrames:
+            Math.max(1, props.clips.length) * CLIP_DURATION_S * FPS +
+            Math.max(0, props.outroDurationInFrames ?? 0),
         })}
       />
       <Composition
