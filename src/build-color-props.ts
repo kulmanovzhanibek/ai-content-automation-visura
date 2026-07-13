@@ -31,6 +31,7 @@ type Plan = {
   footer?: string | null;
   voice?: string | null;
   outroVideo?: string | null;
+  outroVideoBg?: string | null;
   outroSeconds?: number;
 };
 
@@ -67,17 +68,29 @@ export function buildColorProps(jobId: string): string {
 
   // optional appended outro video (e.g. app screen recording)
   let outroVideo: string | null = null;
+  let outroVideoBg: string | null = null;
   let outroDurationInFrames = 0;
   if (plan.outroVideo) {
     if (!existsSync(path.join(jobDir, plan.outroVideo)))
       throw new Error(`Outro video not found: ${plan.outroVideo}`);
     outroVideo = `${jobId}/${plan.outroVideo}`;
     outroDurationInFrames = Math.max(1, Math.round((plan.outroSeconds ?? 5) * fps));
+    // a separate copy of the outro file for the blurred background layer
+    // (Remotion dedupes two OffthreadVideo that share an identical src)
+    if (plan.outroVideoBg) {
+      if (!existsSync(path.join(jobDir, plan.outroVideoBg)))
+        throw new Error(`Outro bg video not found: ${plan.outroVideoBg}`);
+      outroVideoBg = `${jobId}/${plan.outroVideoBg}`;
+    }
   }
 
   writeFileSync(
     outPath,
-    JSON.stringify({ frames, footer, voice, outroVideo, outroDurationInFrames }, null, 2)
+    JSON.stringify(
+      { frames, footer, voice, outroVideo, outroVideoBg, outroDurationInFrames },
+      null,
+      2
+    )
   );
   const totalS =
     (frames.reduce((s, f) => s + f.durationInFrames, 0) + outroDurationInFrames) / fps;

@@ -30,8 +30,13 @@ export const colorReelSchema = z.object({
   // optional voiceover played across the whole reel (styles + outro)
   voice: z.string().nullable().default(null),
   // optional video appended after the frames (e.g. an app screen recording as
-  // the CTA payoff). Shown letterboxed over a blurred fill of itself.
+  // the CTA payoff). Shown letterboxed (objectFit contain).
   outroVideo: z.string().nullable().default(null),
+  // optional SECOND copy of the outro video used as a blurred full-bleed fill
+  // behind the letterboxed one (must be a different file path — Remotion
+  // dedupes two OffthreadVideo with an identical src). Falls back to a dark
+  // background when null.
+  outroVideoBg: z.string().nullable().default(null),
   outroDurationInFrames: z.number().default(0),
 });
 
@@ -99,25 +104,37 @@ const Footer: React.FC<{ text: string }> = ({ text }) => (
 );
 
 /** The appended outro video (e.g. app screen recording), letterboxed on a
- *  blurred fill of itself so a narrow phone recording has no black bars. */
-const OutroVideo: React.FC<{ src: string }> = ({ src }) => (
-  <AbsoluteFill style={{ backgroundColor: "black" }}>
+ *  blurred fill (a second copy of the file) so a narrow phone recording has no
+ *  black bars. Falls back to a dark background when no bg copy is given. */
+const OutroVideo: React.FC<{ src: string; bgSrc: string | null }> = ({ src, bgSrc }) => (
+  <AbsoluteFill style={{ backgroundColor: "#141416" }}>
+    {bgSrc ? (
+      <OffthreadVideo
+        src={staticFile(bgSrc)}
+        muted
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          filter: "blur(48px) brightness(0.55)",
+          transform: "scale(1.15)",
+          zIndex: 0,
+        }}
+      />
+    ) : null}
     <OffthreadVideo
       src={staticFile(src)}
       muted
       style={{
         position: "absolute",
+        inset: 0,
         width: "100%",
         height: "100%",
-        objectFit: "cover",
-        filter: "blur(48px) brightness(0.6)",
-        transform: "scale(1.15)",
+        objectFit: "contain",
+        zIndex: 1,
       }}
-    />
-    <OffthreadVideo
-      src={staticFile(src)}
-      muted
-      style={{ width: "100%", height: "100%", objectFit: "contain" }}
     />
   </AbsoluteFill>
 );
@@ -127,6 +144,7 @@ export const ColorReel: React.FC<ColorReelProps> = ({
   footer,
   voice,
   outroVideo,
+  outroVideoBg,
   outroDurationInFrames,
 }) => {
   return (
@@ -145,7 +163,7 @@ export const ColorReel: React.FC<ColorReelProps> = ({
         ))}
         {outroVideo && outroDurationInFrames > 0 ? (
           <Series.Sequence durationInFrames={outroDurationInFrames}>
-            <OutroVideo src={outroVideo} />
+            <OutroVideo src={outroVideo} bgSrc={outroVideoBg ?? null} />
           </Series.Sequence>
         ) : null}
       </Series>
