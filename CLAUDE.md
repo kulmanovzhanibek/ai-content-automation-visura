@@ -23,6 +23,13 @@ timelapse transitions → Remotion montage with captions → Telegram.
 - Voice length must match total clip duration = (N-1) * 5s. Adjust script length or N.
 - All work under jobs/<job_id>/. Idempotent: skip steps whose output already exists.
 - Kling generations cost credits — never fire trial/throwaway jobs.
+- **BILINGUAL BY DEFAULT (MANDATORY): every finished video ships in BOTH Russian
+  and English — the SAME video, two language versions.** Generate the images +
+  Kling clips ONCE, then produce two jobs `<job_id>` (EN) and `<job_id>-ru` (RU)
+  that reuse the same `images/` + `clips/` (0 extra Kling credits — see "other-
+  language version" below): each gets its own `script.json`, `voice.mp3`,
+  `captions.json`, render and Telegram send (RU caption for the RU cut, EN for the
+  EN cut). Send BOTH to Telegram and to the user. Do not stop after one language.
 - Remotion: solo/individual = free license.
 - Voiceover pacing: to spread a short "hook + idea names" script evenly across the
   (N−1)×5s video so each name lands on its clip, insert ElevenLabs
