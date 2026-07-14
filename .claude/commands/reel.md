@@ -25,7 +25,10 @@ user, wait for "go" before spending Kling credits.
    `npx tsx src/telegram.ts --images <job_id>`. **Show images, wait for "go".**
 3. **Voice** — `npx tsx src/tts.ts <job_id> "<script>"`. Check timestamps.json final
    time vs (N−1)×5s; if off >~1.5s fix the script and rerun BEFORE Kling.
-4. **Captions** — `npx tsx src/captions.ts <job_id>`.
+4. **Captions** — `npx tsx src/captions.ts <job_id> --phrases --gap 400` for
+   break-paced "hook + idea names" scripts (ONE subtitle per phrase, each name on
+   its own page). Ensure preset caption_style has `combineTokensWithinMilliseconds`
+   ~500 and `bottomOffset` ~430 (see CLAUDE.md Captions rules).
 5. **Kling** (follow `docs/kling-bridge.md` EXACTLY): check credits (need (N−1)×25);
    upload PNGs, cache URLs in `kling.json`; `image_to_video` per pair
    (`kling-video-v2_5`, `first_image`+`tail_image`, `duration=5`,
@@ -33,9 +36,15 @@ user, wait for "go" before spending Kling credits.
    {WHAT_CHANGES} filled); record generation_ids BEFORE polling; poll `query_tasks`
    on background timers (never foreground); download `url_without_watermark`. On
    failure relay it and STOP — never auto-resubmit.
-6. **Render** — `npx tsx src/build-props.ts <job_id>` →
+6. **App outro (optional)** — to append the Visura screen recording as a CTA payoff:
+   copy `app.mp4`+`app-bg.mp4` into the job (transcode/copy per CLAUDE.md "App outro
+   asset") and add `jobs/<job_id>/outro.json` `{video,videoBg,seconds,text}` — `text`
+   renders a white CTA pill (emoji ok). Put the app CTA HERE, not as an extra spoken
+   line (that desyncs the idea names — see CLAUDE.md Voice rules).
+   For big timed labels (BEFORE/AFTER) add `labels.json` instead of captions.
+7. **Render** — `npx tsx src/build-props.ts <job_id>` →
    `npx remotion render Reel jobs/<job_id>/out.mp4 --props=jobs/<job_id>/props.json`.
-7. **Telegram as file** — `npx tsx src/telegram.ts jobs/<job_id>/out.mp4 "<caption>"`
+8. **Telegram as file** — `npx tsx src/telegram.ts jobs/<job_id>/out.mp4 "<caption>"`
    (preset `telegram_caption` if set) and send `out.mp4` to the user in chat.
 
 **Final report:** job id, N images, clips generated vs reused, voice duration vs

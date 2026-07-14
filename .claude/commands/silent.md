@@ -26,7 +26,10 @@ after images, STOP, show them to the user, wait for "go" before rendering.
 3. **Plan** → `jobs/<job_id>/color-plan.json`: ordered frames
    `{ "img", "label", "kind", "seconds" }` — a `title` "before" frame (~2s) then the
    color frames (~1.5s each), labels = short color names, on-screen text per the
-   viral rules.
+   viral rules. OPTIONAL top-level keys: `footer` (dark CTA plaque on every frame),
+   `voice`+`outroVideo`/`outroVideoBg`/`outroSeconds` (add a voiceover and/or an
+   app-recording outro — see CLAUDE.md Composition inputs). For a "same room in N
+   interior STYLES with voiceover" reel use the dedicated `/style` command.
 4. `npx tsx src/build-color-props.ts <job_id>` →
    `npx remotion render ColorReel jobs/<job_id>/out.mp4 --props=jobs/<job_id>/props-color.json`.
 5. **Telegram as file** — `npx tsx src/telegram.ts jobs/<job_id>/out.mp4 "<caption>"`

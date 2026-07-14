@@ -52,10 +52,15 @@ finished artifact sent to Telegram as an uncompressed file:
 
 | Command | Format | Composition | Voice | Kling |
 |---|---|---|---|---|
-| `/reel` | WITH Kling AI — voiceover + Kling timelapse transitions + captions | `Reel` | yes | yes (credits) |
+| `/reel` | WITH Kling — space-ideas ("I didn't know what to do with…"), voiceover + Kling morph + captions, optional app outro | `Reel` | yes | yes (credits) |
+| `/beforeafter` | WITH Kling — Before/After room fill-up (4 chain frames → 3 morph clips), BEFORE/AFTER labels, optional app outro | `Reel` | Before/After words | yes (credits) |
+| `/style` | WITHOUT Kling — "Pick your style", same room in N interior styles, voiceover + pills + app outro | `ColorReel` | yes | no |
 | `/montage` | WITHOUT Kling — photo montage, wipe/slide/fade + voiceover + captions | `Slideshow` | yes | no |
 | `/silent` | WITHOUT voice — color-swap pills or silent montage | `ColorReel` / `Slideshow` | no | no |
 | `/slides` | JUST SCREENSHOTS — photo + hook + text PNG carousel (no video) | `Slide` (stills) | no | no |
+
+`ColorReel` and `Reel` both take OPTIONAL voice / app-outro / labels inputs — see
+**Composition inputs & session-hardened rules** below. Read that before any format.
 
 - **Reel** = the full pipeline above (`build-props` → render `Reel`).
 - **Slideshow** = Kling-free montage from images (`build-slideshow-props` → render
@@ -64,6 +69,80 @@ finished artifact sent to Telegram as an uncompressed file:
   hard cuts, no voice (`build-color-props` from a `color-plan.json`).
 - **Slides** = concept via `slides-concept.ts` → backgrounds via `gen-images` →
   `render-slides.ts` → `telegram --slides`.
+
+## Composition inputs & session-hardened rules — MANDATORY (read before any format)
+Every build script reads JSON from `jobs/<job_id>/`; drop the optional files in and
+the feature turns on. This is the reference so any format runs without errors.
+
+### ColorReel — `build-color-props.ts` reads `color-plan.json`
+`{ fps, frames:[{img,label,kind:"title"|"color",seconds}] }` + OPTIONAL top-level:
+- `footer`: dark CTA plaque on every frame (`\n` splits lines).
+- `voice`: `"voice.mp3"` — plays a voiceover across the whole reel (ColorReel is NOT
+  only-silent; this powers the `/style` format).
+- `outroVideo` + `outroVideoBg` + `outroSeconds`: append the app recording as an
+  outro. `outroVideoBg` MUST be a SEPARATE file copy (see App outro asset).
+Pills: `kind:"title"` = big, upper-middle; `kind:"color"` = lower-centre.
+
+### Reel — `build-props.ts` reads `clips/` + `voice.mp3` + `captions.json` + `preset.json`
+`caption_style`, + OPTIONAL:
+- `outro.json` `{video,videoBg,seconds,text}`: append the app recording as an outro
+  with an optional white CTA pill (`text`, emoji ok). `videoBg` = separate copy.
+- `labels.json` `[{text,fromMs,toMs}]`: big centred timed labels (BEFORE/AFTER). Use
+  these — NOT captions — for multi-second labels; `createTikTokStyleCaptions` merges
+  long labels into one page (e.g. "BEFOREAFTER"). Remove captions.json when using labels.
+
+### Captions (break-paced voiceovers)
+- `npx tsx src/captions.ts <job> --phrases --gap 400` → ONE subtitle per phrase
+  (splits on the `<break>` silences), so each idea name is its own page.
+- caption_style (in preset.json): `combineTokensWithinMilliseconds: 500` (NOT 1400 —
+  1400 merges two idea names onto one page) and `bottomOffset: 430` (lower third; 780
+  floats mid-frame). The `space-ideas` preset already has these.
+
+### Voice / ElevenLabs pacing
+- Total voice is effectively CAPPED (~23–24s); big `<break>` values do NOT stretch it
+  linearly, and adding a trailing spoken CTA line COMPRESSES idea-name spacing and
+  desyncs them from the 5s clips. Keep the reel voice = hook + N idea names + one
+  question; put the app CTA as an on-screen `outro.json` `text` pill, NOT spoken.
+- Two timed words (BEFORE at 0s, AFTER at 10s): make `before.mp3` + `after.mp3` (two
+  tts runs, rename `voice.mp3`), then merge:
+  `npx remotion ffmpeg -i before.mp3 -i after.mp3 -filter_complex "[1]adelay=10000|10000[a];[0][a]amix=inputs=2:normalize=0,apad=whole_dur=15" -t 15 voice.mp3`.
+
+### App outro asset (the ~6s Visura screen recording)
+- Source is iPhone HEVC `.mov`; transcode once (Remotion/Chromium won't reliably
+  decode HEVC): `npx remotion ffmpeg -i app-raw.mov -c:v libx264 -pix_fmt yuv420p -an app.mp4`.
+- Make a SEPARATE copy `cp app.mp4 app-bg.mp4` — Remotion DEDUPES two OffthreadVideo
+  with an identical `src`, so the blurred background layer needs its own file. The
+  sharp video renders letterboxed with a zIndex ABOVE the blurred fill (no black bars).
+- Reuse the same `app.mp4`/`app-bg.mp4` across jobs (`cp` from an existing job).
+
+### English / other-language version of an existing video (0 Kling credits)
+- Kling clips download locally and are language-free. Copy the job to `<job>-en`
+  (images/ + clips/ + app*.mp4 + preset.json), rewrite `script.json` in English, regen
+  `voice.mp3` + `captions.json` (`--phrases`), and for ColorReel set English labels in
+  `color-plan.json`. Re-render. No new Kling spend. Use "color" (US) not "colour".
+
+### Image generation (Gemini / Nano Banana)
+- `--base-first`: prompt 1 = base; every other prompt EDITS the base (same room, only
+  contents change) — for "N ideas for the same space" and color/style swaps.
+- `--chain`: each prompt edits the PREVIOUS frame — for progressive build-ups (empty
+  → furnished Before/After) where placed items must stay put.
+- Prompt discipline: "keep the EXACT same room/architecture/window/camera/lighting";
+  for finished styles demand "smooth plastered ceiling, NO exposed concrete/pipes,
+  finished floor, NO debris" (except Loft); forbid unwanted openings ("solid walls,
+  NO doorway/openings, do not add windows"); ask for a "COMPLETE, fully-furnished,
+  LIVED-IN" room so it isn't sparse.
+- Vertex 429 (RESOURCE_EXHAUSTED) is common — retry the whole gen-images call with
+  backoff in a loop; it's idempotent (skips images that already exist).
+
+### Gotchas
+- NEVER `cd` into a subdir inside a Bash call — the working directory persists across
+  calls and later relative paths (`jobs/...`) break. Prefix each call with
+  `cd /home/user/ai-content-automation-visura &&` or use absolute paths.
+- Reading a full-res screenshot can exceed the model's 32MB request limit on a long
+  chat (not a file-size problem) — downscale first:
+  `npx remotion ffmpeg -i big.png -vf scale=720:-1 small.jpg`, then read the small one.
+- Chat/attachment images do NOT persist to disk; the uploaded path under
+  `~/.claude/uploads/...` is readable during that turn.
 
 ## Slides pipeline rules (photo + hook + text carousel) — MANDATORY
 Hard-won conventions for the `/slides` format. Follow all of them.
