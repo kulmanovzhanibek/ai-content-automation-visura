@@ -24,6 +24,7 @@ export const RemotionRoot: React.FC = () => {
           outroVideoBg: null,
           outroDurationInFrames: 0,
           outroText: null,
+          bigLabels: [],
         }}
         calculateMetadata={({ props }) => ({
           durationInFrames:

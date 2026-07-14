@@ -62,7 +62,13 @@ export function buildProps(jobId: string): string {
     }
   }
 
-  const props = { clips, voice, captions, captionStyle, outroVideo, outroVideoBg, outroDurationInFrames, outroText };
+  // optional big timed labels (BEFORE/AFTER) from jobs/<job>/labels.json
+  const labelsPath = path.join(jobDir, "labels.json");
+  const bigLabels = existsSync(labelsPath)
+    ? JSON.parse(readFileSync(labelsPath, "utf8"))
+    : [];
+
+  const props = { clips, voice, captions, captionStyle, outroVideo, outroVideoBg, outroDurationInFrames, outroText, bigLabels };
   const outPath = path.join(jobDir, "props.json");
   writeFileSync(outPath, JSON.stringify(props, null, 2));
   console.log(

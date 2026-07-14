@@ -1,5 +1,13 @@
 import React from "react";
-import { AbsoluteFill, Audio, OffthreadVideo, Series, staticFile } from "remotion";
+import {
+  AbsoluteFill,
+  Audio,
+  OffthreadVideo,
+  Series,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { z } from "zod";
 import { Captions } from "./Captions";
 import "@fontsource/montserrat/800.css";
@@ -38,6 +46,11 @@ export const reelSchema = z.object({
   outroDurationInFrames: z.number().default(0),
   // optional CTA text shown on a pill under the outro video
   outroText: z.string().nullable().default(null),
+  // optional big timed labels (e.g. BEFORE / AFTER) rendered directly by time,
+  // bypassing createTikTokStyleCaptions (which merges long labels into one page)
+  bigLabels: z
+    .array(z.object({ text: z.string(), fromMs: z.number(), toMs: z.number() }))
+    .default([]),
 });
 
 export type ReelProps = z.infer<typeof reelSchema>;
@@ -101,6 +114,36 @@ const OutroVideo: React.FC<{ src: string; bgSrc: string | null; text: string | n
   </AbsoluteFill>
 );
 
+/** Big timed labels (BEFORE / AFTER) — plain time-gated overlay, one at a time. */
+const BigLabels: React.FC<{ labels: { text: string; fromMs: number; toMs: number }[] }> = ({
+  labels,
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const timeMs = (frame / fps) * 1000;
+  const active = labels.find((l) => timeMs >= l.fromMs && timeMs < l.toMs);
+  if (!active) return null;
+  return (
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+      <div
+        style={{
+          fontFamily: "'Montserrat', Arial, Helvetica, sans-serif",
+          fontWeight: 800,
+          fontSize: 150,
+          letterSpacing: "2px",
+          color: "white",
+          WebkitTextStroke: "9px black",
+          paintOrder: "stroke fill",
+          textShadow: "0 6px 26px rgba(0,0,0,0.5)",
+          textTransform: "uppercase",
+        }}
+      >
+        {active.text}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 export const Reel: React.FC<ReelProps> = ({
   clips,
   voice,
@@ -110,6 +153,7 @@ export const Reel: React.FC<ReelProps> = ({
   outroVideoBg,
   outroDurationInFrames,
   outroText,
+  bigLabels,
 }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -131,6 +175,7 @@ export const Reel: React.FC<ReelProps> = ({
       </Series>
       {voice ? <Audio src={staticFile(voice)} /> : null}
       {captions.length > 0 ? <Captions captions={captions} styleOverrides={captionStyle} /> : null}
+      {bigLabels.length > 0 ? <BigLabels labels={bigLabels} /> : null}
     </AbsoluteFill>
   );
 };
