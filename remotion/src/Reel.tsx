@@ -129,12 +129,12 @@ const BigLabels: React.FC<{ labels: { text: string; fromMs: number; toMs: number
         style={{
           fontFamily: "'Montserrat', Arial, Helvetica, sans-serif",
           fontWeight: 800,
-          fontSize: 150,
-          letterSpacing: "2px",
+          fontSize: 88,
+          letterSpacing: "1px",
           color: "white",
-          WebkitTextStroke: "9px black",
+          WebkitTextStroke: "6px black",
           paintOrder: "stroke fill",
-          textShadow: "0 6px 26px rgba(0,0,0,0.5)",
+          textShadow: "0 4px 18px rgba(0,0,0,0.5)",
           textTransform: "uppercase",
         }}
       >
