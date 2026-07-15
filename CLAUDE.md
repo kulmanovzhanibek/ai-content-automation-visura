@@ -228,6 +228,45 @@ When asked for a concept, also output the storyboard in this exact shape:
 Hooks stay < 8 words; text plaques are big and readable; no emoji/hashtags in
 on-screen text.
 
+## Daily automation (cron / routine) — MANDATORY content plan
+A scheduled Routine fires once every morning (default **09:00 Asia/Almaty = 04:00
+UTC**; adjust the UTC hour if the timezone changes) and produces the daily content
+package. Each fire is a FRESH session: it clones the repo, reads this plan, and runs
+it end-to-end, sending every artifact to Telegram AS A FILE.
+
+Global rules for every daily item:
+- **Bilingual**: every deliverable ships in BOTH English and Russian (see the
+  BILINGUAL hard rule) — same visuals, two language versions.
+- **App outro everywhere**: every VIDEO ends with the ~5s Visura app outro
+  (`app.mp4` + `app-bg.mp4` + `outro.json` CTA pill; reuse the copies from an
+  existing job — 0 extra cost). Slides end with the App-Store CTA slide instead.
+- **Rotate the room subject daily**: kitchen → living room → bedroom → repeat.
+- **Halal + viral-direction rules** (above) apply to every concept, always.
+- **Never fail the whole run**: if one item's quota is exhausted (ElevenLabs) or a
+  service is down, skip THAT item with a short Telegram status line and continue.
+
+The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling format**:
+
+1. **STYLE** — `/style` (ColorReel WITH voice): one room shown in N interior styles
+   ("Pick your style" / "Выбери свой стиль"). Photos + voiceover montage + pills +
+   app outro. EN + RU. **Auto, no approval.**
+2. **COLOR** — color-swap ColorReel: the SAME room in N colors ("how one color
+   changes the room"). Voiceover montage + **subtitles BURNED into the render** +
+   app outro. EN + RU. **Auto, no approval.**
+3. **SLIDES / PHOTO** — `/slides`: photo + hook + text carousel with the text/hook
+   **BURNED onto the frame**, final App-Store CTA slide. EN + RU. **Auto, no approval.**
+4. **KLING MORPH** — `/reel` (space-ideas) or `/beforeafter`: **GATED**. Generate the
+   base photo + idea frames ONLY, send them to Telegram + the user for approval, then
+   STOP. Do NOT spend Kling credits until the user replies "go" in that session. On
+   "go": Kling clips → render with app outro → send video. EN + RU.
+
+Why the split: formats 1–3 use only Vertex (images) + ElevenLabs (voice) + Telegram —
+all API-key based, so they work in a headless scheduled session. Format 4 needs the
+Kling MCP (interactive auth — may be absent in a headless run) and spends ~100 credits,
+so it ALWAYS stops at the image-approval gate. If the Kling MCP is unavailable in the
+scheduled session, still deliver the approval photos and note that video needs a manual
+"go" in an interactive session.
+
 ## Discipline
 Build the vertical slice first (one video end-to-end) before any automation,
 templating, or Telegram trigger. Do not build ahead of the current phase.
