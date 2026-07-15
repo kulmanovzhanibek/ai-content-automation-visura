@@ -84,10 +84,19 @@ export function buildColorProps(jobId: string): string {
     }
   }
 
+  // optional burned-in subtitles: jobs/<job>/captions.json (+ preset.json caption_style)
+  const captions = existsSync(path.join(jobDir, "captions.json"))
+    ? JSON.parse(readFileSync(path.join(jobDir, "captions.json"), "utf8"))
+    : [];
+  const presetPath = path.join(jobDir, "preset.json");
+  const captionStyle = existsSync(presetPath)
+    ? (JSON.parse(readFileSync(presetPath, "utf8")).caption_style ?? {})
+    : {};
+
   writeFileSync(
     outPath,
     JSON.stringify(
-      { frames, footer, voice, outroVideo, outroVideoBg, outroDurationInFrames },
+      { frames, footer, voice, outroVideo, outroVideoBg, outroDurationInFrames, captions, captionStyle },
       null,
       2
     )
@@ -98,6 +107,7 @@ export function buildColorProps(jobId: string): string {
     `[build-color-props] wrote ${outPath}: ${frames.length} frame(s)` +
       (outroVideo ? ` + outro ${(outroDurationInFrames / fps).toFixed(1)}s` : "") +
       (voice ? " + voice" : "") +
+      (captions.length ? ` + ${captions.length} caption tokens` : "") +
       `, total ${totalS.toFixed(1)}s @ ${fps}fps`
   );
   return outPath;

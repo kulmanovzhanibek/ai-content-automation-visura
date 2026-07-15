@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Audio, Img, OffthreadVideo, Series, staticFile } from "remotion";
 import { z } from "zod";
+import { Captions } from "./Captions";
 import "@fontsource/montserrat/800.css";
 import "@fontsource/montserrat/700.css";
 
@@ -38,6 +39,28 @@ export const colorReelSchema = z.object({
   // background when null.
   outroVideoBg: z.string().nullable().default(null),
   outroDurationInFrames: z.number().default(0),
+  // optional burned-in subtitles (word or phrase tokens), same shape as Reel
+  captions: z
+    .array(
+      z.object({
+        text: z.string(),
+        startMs: z.number(),
+        endMs: z.number(),
+        timestampMs: z.number().nullable(),
+        confidence: z.number().nullable(),
+      })
+    )
+    .default([]),
+  captionStyle: z
+    .object({
+      combineTokensWithinMilliseconds: z.number().optional(),
+      fontSize: z.number().optional(),
+      color: z.string().optional(),
+      strokeWidth: z.number().optional(),
+      bottomOffset: z.number().optional(),
+      maxWidthPercent: z.number().optional(),
+    })
+    .optional(),
 });
 
 export type ColorReelProps = z.infer<typeof colorReelSchema>;
@@ -146,6 +169,8 @@ export const ColorReel: React.FC<ColorReelProps> = ({
   outroVideo,
   outroVideoBg,
   outroDurationInFrames,
+  captions,
+  captionStyle,
 }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -169,6 +194,7 @@ export const ColorReel: React.FC<ColorReelProps> = ({
       </Series>
       {footer ? <Footer text={footer} /> : null}
       {voice ? <Audio src={staticFile(voice)} /> : null}
+      {captions.length > 0 ? <Captions captions={captions} styleOverrides={captionStyle} /> : null}
     </AbsoluteFill>
   );
 };
