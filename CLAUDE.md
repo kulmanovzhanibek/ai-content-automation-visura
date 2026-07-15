@@ -253,10 +253,18 @@ The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling fo
    ("Pick your style" / "Выбери свой стиль"). Photos + voiceover montage + pills +
    app outro. EN + RU. **Auto, no approval.**
 2. **COLOR** — color-swap ColorReel: the SAME room in N colors ("how one color
-   changes the room"). Voiceover montage + **subtitles BURNED into the render** +
-   app outro. EN + RU. **Auto, no approval.**
+   changes the room"). Voiceover montage + on-screen **title plaque + color-name
+   pills ONLY (NO caption subtitles)** + app outro. EN + RU. **Auto, no approval.**
 3. **SLIDES / PHOTO** — `/slides`: photo + hook + text carousel with the text/hook
    **BURNED onto the frame**, final App-Store CTA slide. EN + RU. **Auto, no approval.**
+
+**NO DOUBLE TEXT (mandatory).** Never stack two text layers on one frame. Each
+format has exactly ONE text system:
+- **STYLE & COLOR (ColorReel)** → title plaque + pills ONLY. Do NOT add/burn
+  voiceover caption subtitles on top — they overlap the plaque and look broken
+  (rejected example). ColorReel has no captions layer; never bolt one on.
+- **KLING `/reel`** → TikTok captions ONLY (hook + idea names). No pills.
+- **SLIDES** → plaque/hook text burned on the still. No captions, no voice.
 4. **KLING MORPH** — `/reel` (space-ideas) or `/beforeafter`: **GATED**. Generate the
    base photo + idea frames ONLY, send them to Telegram + the user for approval, then
    STOP. Do NOT spend Kling credits until the user replies "go" in that session. On
