@@ -237,9 +237,11 @@ it end-to-end, sending every artifact to Telegram AS A FILE.
 Global rules for every daily item:
 - **Bilingual**: every deliverable ships in BOTH English and Russian (see the
   BILINGUAL hard rule) — same visuals, two language versions.
-- **App outro everywhere**: every VIDEO ends with the ~5s Visura app outro
-  (`app.mp4` + `app-bg.mp4` + `outro.json` CTA pill; reuse the copies from an
-  existing job — 0 extra cost). Slides end with the App-Store CTA slide instead.
+- **App outro everywhere**: every VIDEO ends with the ~5s Visura app outro. The
+  committed asset lives at `assets/app.mp4` (survives fresh clones — `jobs/` does
+  NOT). Per job: `cp assets/app.mp4 jobs/<job>/app.mp4 && cp assets/app.mp4
+  jobs/<job>/app-bg.mp4`, then add `outro.json` `{video,videoBg,seconds:5.4,text}`
+  with the CTA pill. Slides end with the App-Store CTA slide instead.
 - **Rotate the room subject daily**: kitchen → living room → bedroom → repeat.
 - **Halal + viral-direction rules** (above) apply to every concept, always.
 - **Never fail the whole run**: if one item's quota is exhausted (ElevenLabs) or a
