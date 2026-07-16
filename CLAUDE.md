@@ -243,15 +243,22 @@ Global rules for every daily item:
   jobs/<job>/app-bg.mp4`, then add `outro.json` `{video,videoBg,seconds:5.4,text}`
   with the CTA pill. Slides end with the App-Store CTA slide instead.
 - **Rotate the room subject daily**: kitchen → living room → bedroom → repeat.
+- **No bottom CTA footer** on ColorReel daily items (`footer` stays null) — the
+  only CTA is the app outro. Do NOT burn "Try … free / Link in bio" plaques.
+- **Full, lived-in rooms**: base/title frame shows the WHOLE room; styled/colored
+  frames are COMPLETE, fully-furnished, cozy, modern (never sparse or empty).
 - **Halal + viral-direction rules** (above) apply to every concept, always.
 - **Never fail the whole run**: if one item's quota is exhausted (ElevenLabs) or a
   service is down, skip THAT item with a short Telegram status line and continue.
 
 The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling format**:
 
-1. **STYLE** — `/style` (ColorReel WITH voice): one room shown in N interior styles
-   ("Pick your style" / "Выбери свой стиль"). Photos + voiceover montage + pills +
-   app outro. EN + RU. **Auto, no approval.**
+1. **STYLE** — `/style` (ColorReel WITH voice): the SAME full room shown in N
+   interior styles ("Pick your style" / "Выбери свой стиль"). Frame the WHOLE room;
+   every styled frame must be a COMPLETE, fully-furnished, LIVED-IN, cozy, modern
+   room (never sparse/empty). Photos + voiceover montage + title plaque + style
+   pills + app outro. **NO bottom CTA footer** (`footer` stays null — the CTA lives
+   in the app outro). EN + RU. **Auto, no approval.**
 2. **COLOR** — color-swap ColorReel: the SAME room in N colors ("how one color
    changes the room"). Voiceover montage + on-screen **title plaque + color-name
    pills ONLY (NO caption subtitles)** + app outro. EN + RU. **Auto, no approval.**
