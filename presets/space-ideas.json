@@ -5,7 +5,8 @@
   "voice_id": null,
   "images_default": 6,
   "gen_images_mode": "--base-first",
-  "image_style_preamble": "Photorealistic interior photo, vertical 9:16, shot on a phone, natural warm lighting, realistic materials. The architecture, walls, floor, lighting and camera angle must stay EXACTLY identical to the base image; only the contents of the space change.",
+  "image_style_preamble": "High-quality photorealistic interior photo, vertical 9:16, shot on a phone, natural warm lighting, realistic materials, sharp and well-lit like a real-estate listing. The architecture, walls, floor, lighting and camera angle must stay EXACTLY identical to the base image; only the contents of the space change.",
+  "base_space_guidance": "The base (frame 1) MUST be a genuinely AWKWARD / UNUSUAL architectural spot that makes 'I didn't know what to do with this space' believable: an under-stairs nook, a recessed wall niche/alcove, the dead space beside a chimney breast, a sloped attic corner, a bay-window nook, an awkward landing, a deep window reveal, a boxed-in bulkhead. NEVER a plain empty room corner (bare wall+window+floor is boring and off-brief). Keep it empty so the ideas fill it.",
   "script_structure": "Hook in first 3s: 'I didn't know what to do with this space...'. Then one short line per idea frame naming the idea. End with an engagement question like 'Which one would you pick?'. ~2.2 words/sec.",
   "transition_prompt_template": "Playful stop-motion style timelapse in one single continuous shot: {WHAT_CHANGES}, piece by piece. Dynamic but seamless, evenly paced across the whole clip, ending exactly at the final frame. No scene cuts, no flashes. Camera perfectly static on a tripod, identical framing throughout. Constant natural lighting. No people.",
   "caption_style": {

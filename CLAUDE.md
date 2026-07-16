@@ -287,6 +287,15 @@ format has exactly ONE text system:
    base photo + idea frames ONLY, send them to Telegram + the user for approval, then
    STOP. Do NOT spend Kling credits until the user replies "go" in that session. On
    "go": Kling clips → render with app outro → send video. EN + RU.
+   - **The base MUST be a genuinely AWKWARD / UNUSUAL architectural spot** — the hook
+     "I didn't know what to do with this space" only works if the space is odd:
+     under-stairs nook, a recessed wall niche/alcove, the dead space beside a chimney
+     breast, a sloped attic corner, a bay-window nook, an awkward landing, a deep
+     window reveal, a boxed-in bulkhead. **NEVER a plain empty room corner** (rejected
+     example — a bare wall+window+floor corner is boring and off-brief).
+   - **High-quality photorealistic base** (real estate / interiors photography look):
+     sharp, well-lit, believable architecture, correct 9:16. Regenerate if it looks
+     flat, cheap, or generic.
 
 Why the split: formats 1–3 use only Vertex (images) + ElevenLabs (voice) + Telegram —
 all API-key based, so they work in a headless scheduled session. Format 4 needs the
