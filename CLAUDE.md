@@ -163,6 +163,17 @@ Hard-won conventions for the `/slides` format. Follow all of them.
   slide reads as broken.
 - **Before/after must be the SAME room.** The "after" is an edit of the "before"
   base, so it's recognizably the same space transformed.
+- **Make the "after" a JAW-DROPPING transformation (mandatory quality bar).** The
+  redesign must read as a premium, magazine-quality interior: bright and airy,
+  clean, cozy, modern, professionally styled and fully furnished, with warm even
+  lighting, layered textiles, plants/art/decor, tidy surfaces. Maximize the
+  before→after contrast — the "before" stays dim/cluttered/dated, the "after" is
+  aspirational and share-worthy ("залетает"). Put this quality language explicitly
+  in the after edit prompt (e.g. "bright airy magazine-quality redesign, cozy
+  modern, professionally styled, warm even lighting, fully furnished, decluttered,
+  high-end finishes") — while still keeping the SAME architecture/walls/windows/
+  camera as the before (see the two rules below). Regenerate if the after looks
+  flat, dim, sparse or only mildly changed.
 - **The "after" must NOT invent architecture.** Redesign only finishes/furniture —
   never add windows, doors or openings the "before" doesn't have (Gemini loves to
   add a window over a sink). Keep the same walls, window/door positions and camera;
