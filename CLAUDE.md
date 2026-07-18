@@ -47,11 +47,20 @@ timelapse transitions → Remotion montage with captions → Telegram.
 - @remotion/captions: build Caption tokens {text,startMs,endMs,timestampMs},
   then createTikTokStyleCaptions for word-by-word highlight pages.
 - Telegram: Bot API sendVideo (multipart), TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID.
+- Instagram (Graph API content publishing): 3-step container dance —
+  POST /{ig-user-id}/media (media_type REELS|CAROUSEL + PUBLIC video_url/image_url) →
+  GET /{container}?fields=status_code until FINISHED → POST /{ig-user-id}/media_publish
+  (creation_id). IG can't take a local upload, so assets are first hosted on GCS
+  (src/gcs.ts) to get a public URL. Auth = long-lived token (IG_ACCESS_TOKEN) +
+  IG_USER_ID. See **Instagram publishing** below and `docs/instagram-publishing.md`.
 
 ## Env (.env)
-GCP_SERVICE_ACCOUNT (Vertex service-account JSON, one line; used for image gen),
-ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
-Optional: GCP_PROJECT_ID, GCP_LOCATION (default global), GEMINI_IMAGE_MODEL.
+GCP_SERVICE_ACCOUNT (Vertex service-account JSON, one line; used for image gen AND
+GCS upload for Instagram), ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID,
+TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+Instagram (optional publish step): IG_USER_ID, IG_ACCESS_TOKEN, GCS_BUCKET.
+Optional: GCP_PROJECT_ID, GCP_LOCATION (default global), GEMINI_IMAGE_MODEL,
+GRAPH_API_VERSION (default v23.0), GRAPH_API_HOST (default graph.facebook.com).
 
 ## Output formats & commands (all 1080x1920, all end in Telegram-as-file)
 One slash command per format — each runs the whole flow from the idea to the
@@ -303,6 +312,29 @@ Kling MCP (interactive auth — may be absent in a headless run) and spends ~100
 so it ALWAYS stops at the image-approval gate. If the Kling MCP is unavailable in the
 scheduled session, still deliver the approval photos and note that video needs a manual
 "go" in an interactive session.
+
+## Instagram publishing (Graph API) — OPTIONAL final delivery, parallel to Telegram
+Post the SAME finished artifacts to an Instagram Business/Creator account. This is an
+optional extra sink alongside the Telegram file delivery — Telegram stays primary; do
+NOT drop the Telegram step. Runs on API keys only (no MCP), so it works headless.
+- **Hard constraint: Instagram fetches a PUBLIC URL — it can't take a local upload.**
+  So every asset is first uploaded to GCS (`src/gcs.ts`, reuses `GCP_SERVICE_ACCOUNT`)
+  to get a public URL, then handed to the Graph API. Requires `GCS_BUCKET` (public-read),
+  `IG_USER_ID`, `IG_ACCESS_TOKEN` — see `docs/instagram-publishing.md` for the one-time
+  Meta app + bucket setup.
+- **Reels**: `npx tsx src/instagram.ts --reel <job_id> "<caption>"` — uploads
+  `jobs/<job>/out.mp4`, creates a `media_type=REELS` container, polls `status_code` to
+  FINISHED, then `media_publish`. (Or pass a raw path: `src/instagram.ts <file.mp4>`.)
+- **Carousel** (`/slides`): `npx tsx src/instagram.ts --carousel <job_id> "<caption>"`
+  — uploads `slides/slide_*.png`, posts a `media_type=CAROUSEL` (2–10 items). Instagram
+  crops carousel slides to the FIRST slide's ratio (portrait max 4:5), so 9:16 slides are
+  centre-cropped — post as a Reel if exact 9:16 framing matters.
+- **Verify first (no post spent)**: `npx tsx src/instagram.ts --whoami`.
+- **Idempotent**: a `.ig-sent` sentinel per job prevents double-posting on re-runs; add
+  `--force` to repost. **BILINGUAL still applies** — publish the EN cut and the RU cut as
+  separate posts (each its own caption), same as the Telegram delivery.
+- **Rate limit**: 100 published posts / rolling 24h per IG account (all types combined).
+- Halal + viral-direction rules apply to captions/hashtags exactly as to on-screen text.
 
 ## Discipline
 Build the vertical slice first (one video end-to-end) before any automation,

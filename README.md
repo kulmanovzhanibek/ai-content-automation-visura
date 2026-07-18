@@ -22,6 +22,7 @@ cp .env.example .env   # fill in your keys
 | tts (ElevenLabs + timestamps) | `npx tsx src/tts.ts <job_id> "Text to speak"` | run it once with a short text; writes `voice.mp3` + `timestamps.json` |
 | captions (pure conversion) | `npx tsx src/captions.ts <job_id>` | `npm run test:captions` — unit test, zero API calls |
 | telegram (send file, no compression) | `npx tsx src/telegram.ts <path/to/video.mp4> ["caption"]` — sends as document (uncompressed); add `--as-video` for inline player (Telegram may compress) | run with any local mp4 |
+| instagram (publish via Graph API) | `npx tsx src/instagram.ts --reel <job_id> "caption"` (Reel) / `--carousel <job_id>` (slides) — hosts the asset on GCS then publishes | `npx tsx src/instagram.ts --whoami` verifies the token (spends no post) |
 
 All job artifacts live under `jobs/<job_id>/`: `images/`, `clips/`, `voice.mp3`,
 `timestamps.json`, `captions.json`, `props.json`, `out.mp4`. Every step is

@@ -9,6 +9,8 @@
     "tts": "tsx src/tts.ts",
     "captions": "tsx src/captions.ts",
     "telegram": "tsx src/telegram.ts",
+    "instagram": "tsx src/instagram.ts",
+    "gcs": "tsx src/gcs.ts",
     "slides-concept": "tsx src/slides-concept.ts",
     "render-slides": "tsx src/render-slides.ts",
     "test:captions": "tsx src/captions.ts --test",
