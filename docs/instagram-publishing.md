@@ -38,12 +38,24 @@ Long-lived user tokens last ~60 days — refresh before expiry, or use a Meta *s
 user* token that doesn't expire. Rate limit: **100 published posts per rolling 24h**
 (all types combined).
 
-Put them in `.env`:
+Put them in `.env` (or the environment's configured variables):
 
 ```
 IG_USER_ID=178414...          # numeric business-account id
 IG_ACCESS_TOKEN=EAAG...       # long-lived token, instagram_content_publish
+# The token may instead be provided as VISURA_IG_API (an accepted alias).
 ```
+
+### Network / egress policy (Claude Code on the web)
+
+The Graph API host **`graph.facebook.com`** must be allowed by the environment's
+outbound network policy. On a restricted policy the publish call fails with a proxy
+`403 CONNECT` ("destination host is not allowed") and nothing is posted — the
+credentials are fine, the host is simply not on the allowlist. Choose (or adjust) an
+environment network policy that permits `graph.facebook.com`; see
+https://code.claude.com/docs/en/claude-code-on-the-web. The GCS host
+(`storage.googleapis.com`) used for hosting is a Google API and is typically already
+allowed (the image pipeline uses Google APIs).
 
 ### 2. GCS bucket (public-read hosting)
 

@@ -36,9 +36,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function creds(): { igUserId: string; token: string } {
   const igUserId = process.env.IG_USER_ID;
-  const token = process.env.IG_ACCESS_TOKEN;
+  // The access token is read from IG_ACCESS_TOKEN, or VISURA_IG_API as an alias
+  // (the env var name this deployment already sets).
+  const token = process.env.IG_ACCESS_TOKEN ?? process.env.VISURA_IG_API;
   if (!igUserId) throw new Error("IG_USER_ID is not set (see .env.example)");
-  if (!token) throw new Error("IG_ACCESS_TOKEN is not set (see .env.example)");
+  if (!token) throw new Error("IG_ACCESS_TOKEN / VISURA_IG_API is not set (see .env.example)");
   return { igUserId, token };
 }
 
