@@ -109,6 +109,10 @@ Instagram publishing is an **optional final delivery step, parallel to Telegram*
 same `out.mp4` / `slide_*.png` that go to Telegram can also go to Instagram. Telegram
 stays the primary "deliver as a file" sink; Instagram is the public-feed publish.
 
+**Language routing: Instagram = Russian only.** Publish only the RU cut (`<job_id>-ru`)
+to Instagram. The English cut is delivered to **Telegram only** — do not post it to
+Instagram. Telegram still receives both languages.
+
 ## Caveats
 
 - **Reels**: must be 9:16, 5–90s, H.264/HEVC — the renders already comply.

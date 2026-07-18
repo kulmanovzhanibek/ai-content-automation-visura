@@ -333,8 +333,11 @@ NOT drop the Telegram step. Runs on API keys only (no MCP), so it works headless
   centre-cropped — post as a Reel if exact 9:16 framing matters.
 - **Verify first (no post spent)**: `npx tsx src/instagram.ts --whoami`.
 - **Idempotent**: a `.ig-sent` sentinel per job prevents double-posting on re-runs; add
-  `--force` to repost. **BILINGUAL still applies** — publish the EN cut and the RU cut as
-  separate posts (each its own caption), same as the Telegram delivery.
+  `--force` to repost.
+- **Instagram = RUSSIAN ONLY (mandatory).** Publish ONLY the RU cut (`<job_id>-ru`) to
+  Instagram. The English cut goes to **Telegram only — NEVER post the EN cut to
+  Instagram.** (Telegram still receives BOTH language versions as before; the bilingual
+  hard rule is unchanged — this only routes the IG sink to the RU cut.)
 - **Rate limit**: 100 published posts / rolling 24h per IG account (all types combined).
 - Halal + viral-direction rules apply to captions/hashtags exactly as to on-screen text.
 
