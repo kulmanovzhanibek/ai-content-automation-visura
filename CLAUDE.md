@@ -317,11 +317,13 @@ scheduled session, still deliver the approval photos and note that video needs a
 Post the SAME finished artifacts to an Instagram Business/Creator account. This is an
 optional extra sink alongside the Telegram file delivery — Telegram stays primary; do
 NOT drop the Telegram step. Runs on API keys only (no MCP), so it works headless.
-- **Hard constraint: Instagram fetches a PUBLIC URL — it can't take a local upload.**
-  So every asset is first uploaded to GCS (`src/gcs.ts`, reuses `GCP_SERVICE_ACCOUNT`)
-  to get a public URL, then handed to the Graph API. Requires `GCS_BUCKET` (public-read),
-  `IG_USER_ID`, `IG_ACCESS_TOKEN` — see `docs/instagram-publishing.md` for the one-time
-  Meta app + bucket setup.
+- **Hard constraint: Instagram fetches a URL — it can't take a local upload.**
+  So every asset is first uploaded to GCS (`src/gcs.ts`, reuses `GCP_SERVICE_ACCOUNT`),
+  which returns a time-limited **V4 signed URL** (bucket stays PRIVATE — works with org
+  public-access-prevention; set `GCS_PUBLIC=true` for a public bucket), then handed to
+  the Graph API. Requires `GCS_BUCKET` (SA needs Storage Object Admin), `IG_USER_ID`,
+  `IG_ACCESS_TOKEN` (or `VISURA_IG_API`) — and the egress policy must allow
+  `graph.facebook.com`. See `docs/instagram-publishing.md`.
 - **Reels**: `npx tsx src/instagram.ts --reel <job_id> "<caption>"` — uploads
   `jobs/<job>/out.mp4`, creates a `media_type=REELS` container, polls `status_code` to
   FINISHED, then `media_publish`. (Or pass a raw path: `src/instagram.ts <file.mp4>`.)

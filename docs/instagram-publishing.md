@@ -57,19 +57,25 @@ https://code.claude.com/docs/en/claude-code-on-the-web. The GCS host
 (`storage.googleapis.com`) used for hosting is a Google API and is typically already
 allowed (the image pipeline uses Google APIs).
 
-### 2. GCS bucket (public-read hosting)
+### 2. GCS bucket (hosting)
 
 ```
-GCS_BUCKET=my-reels-public
+GCS_BUCKET=visura-reels-public   # name WITHOUT dots (a dotted name needs domain verification)
 ```
 
-- Create the bucket.
+- Create the bucket (uniform bucket-level access is fine).
 - Grant the service account (`client_email` in `GCP_SERVICE_ACCOUNT`) the
-  **Storage Object Admin** role on it (write access).
-- Grant `allUsers` the **Storage Object Viewer** role on it (public read) so Instagram
-  can download the object. The files are public marketing videos/images headed for a
-  public IG feed anyway. *(Optional: add a lifecycle rule to auto-delete objects after
-  1 day — Instagram only needs to fetch each once.)*
+  **Storage Object Admin** role on it (write + read).
+
+That's all. By default `src/gcs.ts` returns a **V4 signed URL** signed locally with the
+service-account private key, so the **bucket can stay private** — this works even when
+the organization enforces *public-access-prevention* / uniform access (you do NOT need
+to grant `allUsers` anything). The link is time-limited (`GCS_SIGNED_URL_EXPIRES`,
+default 3600s) — plenty for Instagram to fetch during container processing. *(Optional:
+a lifecycle rule to auto-delete objects after 1 day — Instagram only fetches each once.)*
+
+If instead you have a genuinely public bucket (`allUsers: Storage Object Viewer`), set
+`GCS_PUBLIC=true` to use the plain public URL rather than a signed one.
 
 ### 3. Verify the connection (spends no post)
 
