@@ -28,33 +28,17 @@ All job artifacts live under `jobs/<job_id>/`: `images/`, `clips/`, `voice.mp3`,
 `timestamps.json`, `captions.json`, `props.json`, `out.mp4`. Every step is
 idempotent — outputs that already exist are skipped.
 
-## GitHub Actions (scheduled daily run)
+## Daily content + Instagram delivery
 
-`.github/workflows/daily-content.yml` runs the "Daily automation" plan from
-`CLAUDE.md` on a cron (04:00 UTC = 09:00 Asia/Almaty) via
-[`anthropics/claude-code-action`](https://github.com/anthropics/claude-code-action),
-plus `workflow_dispatch` for an on-demand run. It produces STYLE → COLOR → SLIDES
-(each bilingual, each sent to Telegram + the RU cut posted to Instagram), then stops
-at the Kling-approval-photos gate — **Kling itself only ever runs in an interactive
-Claude Code session** (the action's runner has no Kling MCP connector), so reply
-"go" there after reviewing the approval photos to finish that last video.
-
-Add these as **repository secrets** (Settings → Secrets and variables → Actions) —
-same values as your local `.env`:
-
-| Secret | Used for |
-|---|---|
-| `ANTHROPIC_API_KEY` | authenticates the Claude Code Action itself |
-| `GCP_SERVICE_ACCOUNT` | Vertex image gen + GCS upload (Instagram hosting) |
-| `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | voiceover |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram delivery |
-| `IG_USER_ID`, `IG_ACCESS_TOKEN` | Instagram publishing |
-| `GCS_BUCKET` | hosting assets for Instagram to fetch |
-| `GCP_PROJECT_ID`, `GCP_LOCATION`, `GEMINI_IMAGE_MODEL` | optional overrides, only if you set them locally too |
-
-The runner also needs outbound access to `aiplatform.googleapis.com`,
-`api.elevenlabs.io`, `api.telegram.org`, `graph.facebook.com` and
-`storage.googleapis.com` — all reachable by default on GitHub-hosted runners.
+The daily package (STYLE → COLOR → SLIDES → gated KLING MORPH) is produced by
+Claude itself in a scheduled Claude Code Routine session — see "Daily automation"
+in `CLAUDE.md`. There is no separate CI/cron system generating content: Claude
+always does the generation. Instagram delivery is a simple GCS drop, not an
+automated publish — Claude uploads each finished RU artifact to
+`gs://visura-reels-public/_ig/` (`npx tsx src/gcs.ts <file> "_ig/<name>"`) plus a
+caption `.txt`, and a human posts it from there. A fully automated Graph API
+publish path also exists (`src/instagram.ts`, `docs/instagram-publishing.md`) for
+one-off runs if you want it, but the daily plan doesn't use it.
 
 ## Slides pipeline (photo + hook + text carousel)
 

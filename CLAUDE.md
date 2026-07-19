@@ -249,24 +249,17 @@ Hooks stay < 8 words; text plaques are big and readable; no emoji/hashtags in
 on-screen text.
 
 ## Daily automation (cron / routine) — MANDATORY content plan
-Two equivalent triggers run this plan: a scheduled Claude Code Routine, and
-`.github/workflows/daily-content.yml` (cron `0 4 * * *` = 09:00 Asia/Almaty, no DST;
-also `workflow_dispatch` for a manual run). Either way it's a FRESH session/run:
-clone the repo, read this plan, run it end-to-end, sending every artifact to
-Telegram AS A FILE (and to Instagram — see below).
-
-**Kling (format 4) never runs on the GitHub Actions runner.** The Kling MCP tools
-(`file_upload`, `image_to_video`, ...) are only reachable from an interactive Claude
-Code session with the connector attached to your account (this chat, or a native
-scheduled Routine that happens to carry it) — a `claude-code-action` run on a
-GitHub-hosted runner authenticates with a plain API key and has no such connector, so
-it CANNOT place Kling calls at all, approved or not. Both triggers therefore only
-ever generate the format-4 approval PHOTOS and stop there (see format 4 below); the
-actual Kling render always happens afterwards in an interactive session where you
-reply "go".
+A scheduled Claude Code Routine fires once every morning (default **09:00
+Asia/Almaty = 04:00 UTC**; adjust the UTC hour if the timezone changes) and
+produces the daily content package. Each fire is a FRESH session: it clones the
+repo, reads this plan, and runs it end-to-end — the video/image generation is
+ALWAYS done by Claude itself (Vertex + ElevenLabs + Remotion, as in every other
+format in this file), never by a separate CI system. Every artifact goes to
+Telegram AS A FILE, and the RU cuts also get dropped in GCS for Instagram — see
+below.
 
 **Processing order (mandatory): STYLE → COLOR → SLIDES → KLING MORPH, one item
-fully finished (render + Telegram + Instagram) before starting the next.** KLING
+fully finished (render + Telegram + GCS drop) before starting the next.** KLING
 MORPH always runs LAST since it's the one that gates on human approval — do not
 let it block or delay the three auto formats.
 
@@ -296,20 +289,18 @@ The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling fo
    every styled frame must be a COMPLETE, fully-furnished, LIVED-IN, cozy, modern
    room (never sparse/empty). Photos + voiceover montage + title plaque + style
    pills + app outro. **NO bottom CTA footer** (`footer` stays null — the CTA lives
-   in the app outro). EN + RU. **Auto, no approval.** After Telegram: publish the RU
-   cut to Instagram as a Reel (`npx tsx src/instagram.ts --reel <job_id>-ru "<caption>"`).
+   in the app outro). EN + RU. **Auto, no approval.** After Telegram: drop the RU cut
+   in GCS for Instagram (see below).
 2. **COLOR** — color-swap ColorReel: the SAME room in N colors ("how one color
    changes the room"). Voiceover montage + on-screen **title plaque + color-name
    pills ONLY (NO caption subtitles)** + app outro. EN + RU. **Auto, no approval.**
-   After Telegram: publish the RU cut to Instagram as a Reel
-   (`npx tsx src/instagram.ts --reel <job_id>-ru "<caption>"`).
+   After Telegram: drop the RU cut in GCS for Instagram (see below).
 3. **SLIDES / PHOTO** — `/slides`: photo + hook + text carousel with the text/hook
    **BURNED onto the frame**, final App-Store CTA slide. EN + RU. **Auto, no approval.**
-   After Telegram: publish the RU carousel to Instagram
-   (`npx tsx src/instagram.ts --carousel <job_id>-ru "<caption>"`).
+   After Telegram: drop the RU carousel in GCS for Instagram (see below).
 
-Together formats 1–3 put **2 Reels + 1 carousel post** on Instagram per day, RU only
-(see "Instagram = RUSSIAN ONLY" below) — the single configured `IG_USER_ID` account.
+Together formats 1–3 put **2 videos + 1 carousel** in the Instagram staging folder
+per day, RU only (see "Instagram delivery" below).
 
 **NO DOUBLE TEXT (mandatory).** Never stack two text layers on one frame. Each
 format has exactly ONE text system:
@@ -320,15 +311,9 @@ format has exactly ONE text system:
 - **SLIDES** → plaque/hook text burned on the still. No captions, no voice.
 4. **KLING MORPH** — `/reel` (space-ideas) or `/beforeafter`: **GATED, runs LAST**.
    Generate the base photo + idea frames ONLY, send them to Telegram + the user for
-   approval, then STOP — this is as far as EITHER trigger (native Routine or the
-   GitHub Actions runner) ever goes automatically. Do NOT spend Kling credits until
-   the user explicitly replies "go" in an interactive Claude Code session (the GitHub
-   Actions run has no Kling MCP access and cannot do this step regardless of
-   approval — see above). **Never spend Kling credits or publish anything from this
-   format without that explicit human "go" — it never happens automatically.** Only
-   once approved, in that interactive session: Kling clips → render with app outro →
-   send video to Telegram (EN + RU) → THEN, and only then, publish the RU cut to
-   Instagram as a Reel (`npx tsx src/instagram.ts --reel <job_id>-ru "<caption>"`).
+   approval, then STOP. Do NOT spend Kling credits until the user replies "go" in
+   that session. On "go": Kling clips → render with app outro → send video to
+   Telegram (EN + RU) → THEN drop the RU cut in GCS for Instagram (see below).
    - **The base MUST be a genuinely AWKWARD / UNUSUAL architectural spot** — the hook
      "I didn't know what to do with this space" only works if the space is odd:
      under-stairs nook, a recessed wall niche/alcove, the dead space beside a chimney
@@ -339,44 +324,44 @@ format has exactly ONE text system:
      sharp, well-lit, believable architecture, correct 9:16. Regenerate if it looks
      flat, cheap, or generic.
 
-Why the split: formats 1–3 use only Vertex (images) + ElevenLabs (voice) + Telegram +
-Instagram — all API-key based, so they work in any headless run (native Routine or
-GitHub Actions runner alike). Format 4 needs the Kling MCP, which is tied to an
-interactive Claude Code session's connector — never available to the GitHub Actions
-runner and not guaranteed on a headless native Routine either — and it spends ~100
-credits per job, so it ALWAYS stops at the image-approval gate regardless of trigger.
-The "go" and the resulting render+publish only ever happen in an interactive session.
+Why the split: formats 1–3 use only Vertex (images) + ElevenLabs (voice) + Telegram —
+all API-key based, so they work in a headless scheduled session. Format 4 needs the
+Kling MCP (interactive auth — may be absent in a headless run) and spends ~100 credits,
+so it ALWAYS stops at the image-approval gate. If the Kling MCP is unavailable in the
+scheduled session, still deliver the approval photos and note that video needs a manual
+"go" in an interactive session.
 
-## Instagram publishing (Graph API) — parallel to Telegram
-Post the SAME finished artifacts to an Instagram Business/Creator account. This is an
-extra sink alongside the Telegram file delivery — Telegram stays primary; do NOT drop
-the Telegram step. Runs on API keys only (no MCP), so it works headless. **Mandatory**
-for the 3 daily auto formats (see "Daily automation" above — 2 Reels + 1 carousel/day,
-RU only) and for Kling MORPH once a human has approved and it's rendered; optional for
-any other one-off `/reel`, `/beforeafter`, `/montage`, etc. run outside the daily plan.
-- **Hard constraint: Instagram fetches a URL — it can't take a local upload.**
-  So every asset is first uploaded to GCS (`src/gcs.ts`, reuses `GCP_SERVICE_ACCOUNT`),
-  which returns a time-limited **V4 signed URL** (bucket stays PRIVATE — works with org
-  public-access-prevention; set `GCS_PUBLIC=true` for a public bucket), then handed to
-  the Graph API. Requires `GCS_BUCKET` (SA needs Storage Object Admin), `IG_USER_ID`,
-  `IG_ACCESS_TOKEN` (or `VISURA_IG_API`) — and the egress policy must allow
-  `graph.facebook.com`. See `docs/instagram-publishing.md`.
-- **Reels**: `npx tsx src/instagram.ts --reel <job_id> "<caption>"` — uploads
-  `jobs/<job>/out.mp4`, creates a `media_type=REELS` container, polls `status_code` to
-  FINISHED, then `media_publish`. (Or pass a raw path: `src/instagram.ts <file.mp4>`.)
-- **Carousel** (`/slides`): `npx tsx src/instagram.ts --carousel <job_id> "<caption>"`
-  — uploads `slides/slide_*.png`, posts a `media_type=CAROUSEL` (2–10 items). Instagram
-  crops carousel slides to the FIRST slide's ratio (portrait max 4:5), so 9:16 slides are
-  centre-cropped — post as a Reel if exact 9:16 framing matters.
-- **Verify first (no post spent)**: `npx tsx src/instagram.ts --whoami`.
-- **Idempotent**: a `.ig-sent` sentinel per job prevents double-posting on re-runs; add
-  `--force` to repost.
-- **Instagram = RUSSIAN ONLY (mandatory).** Publish ONLY the RU cut (`<job_id>-ru`) to
-  Instagram. The English cut goes to **Telegram only — NEVER post the EN cut to
-  Instagram.** (Telegram still receives BOTH language versions as before; the bilingual
-  hard rule is unchanged — this only routes the IG sink to the RU cut.)
-- **Rate limit**: 100 published posts / rolling 24h per IG account (all types combined).
-- Halal + viral-direction rules apply to captions/hashtags exactly as to on-screen text.
+## Instagram delivery — drop the file in GCS, a human posts it
+**No Graph API auto-publish in the daily plan.** Claude makes the video/carousel (as
+always, no CI system involved); Instagram publishing itself stays manual — Claude
+just puts the finished artifact where it's easy to grab:
+`gs://visura-reels-public/_ig/` (bucket console:
+https://console.cloud.google.com/storage/browser/visura-reels-public/_ig).
+- Upload with the existing GCS helper (reuses `GCP_SERVICE_ACCOUNT`, no new setup):
+  `npx tsx src/gcs.ts jobs/<job_id>-ru/out.mp4 "_ig/<job_id>-ru.mp4"` (Reels — STYLE,
+  COLOR, KLING MORPH once approved+rendered), or one call per slide for SLIDES:
+  `npx tsx src/gcs.ts jobs/<job_id>-ru/slides/slide_N.png "_ig/<job_id>-ru-slide-N.png"`.
+- Also drop a caption file next to it so it's ready to paste when posting:
+  write `jobs/<job_id>-ru/ig-caption.txt` (caption + hashtags) and upload it the same
+  way to `_ig/<job_id>-ru-caption.txt`.
+- **RUSSIAN ONLY (mandatory)**: only the RU cut (`<job_id>-ru`) goes to `_ig/`. The
+  EN cut stays Telegram-only — never drop it there. (Telegram still receives BOTH
+  language versions as before; this only routes the IG staging folder to RU.)
+- Halal + viral-direction rules apply to the caption file exactly as to on-screen text.
+- That's the full IG step — no `IG_USER_ID`/`IG_ACCESS_TOKEN`, no container polling,
+  no rate-limit tracking. Report the `gs://` paths (or the console link) in the final
+  Telegram/chat summary so they're easy to find.
+
+### Optional: full Graph API auto-publish (not used by the daily plan)
+`src/instagram.ts` + `docs/instagram-publishing.md` implement a complete automated
+publish (3-step container dance against the Graph API, needs `IG_USER_ID` +
+`IG_ACCESS_TOKEN`/`VISURA_IG_API` and `graph.facebook.com` egress) — it still works
+and can be used for a one-off `/reel`, `/beforeafter`, `/montage`, etc. run if you
+want it fully automated, but the daily plan above deliberately does NOT call it.
+- **Reels**: `npx tsx src/instagram.ts --reel <job_id> "<caption>"`.
+- **Carousel**: `npx tsx src/instagram.ts --carousel <job_id> "<caption>"`.
+- **Verify (no post spent)**: `npx tsx src/instagram.ts --whoami`.
+- Idempotent (`.ig-sent` sentinel, `--force` to repost); rate limit 100 posts/24h.
 
 ## Discipline
 Build the vertical slice first (one video end-to-end) before any automation,
