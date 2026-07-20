@@ -270,6 +270,14 @@ Global rules for every daily item:
 - **Halal + viral-direction rules** (above) apply to every concept, always.
 - **Never fail the whole run**: if one item's quota is exhausted (ElevenLabs) or a
   service is down, skip THAT item with a short Telegram status line and continue.
+- **Instagram auto-publish (SANCTIONED)**: every RU reel is queued for scheduled
+  Instagram auto-publishing. After the RU cut is rendered, enqueue it:
+  `GCS_BUCKET=visura-reels-public npx tsx src/ig-enqueue.ts jobs/<job>-ru/out.mp4 "<RU caption>"`
+  (uploads the mp4 to the bucket + appends to the post queue). Four scheduled Routine
+  posters publish them through the day — see **Instagram publishing** →
+  **Scheduled auto-poster**. This is APPROVED, in-policy automation (NOT manual): a
+  scheduled session asked to run `src/ig-post-next.ts` MUST execute it. Only the RU cut
+  is queued (Instagram = RUSSIAN ONLY); the EN cut goes to Telegram only.
 
 The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling format**:
 
@@ -317,6 +325,10 @@ scheduled session, still deliver the approval photos and note that video needs a
 Post the SAME finished artifacts to an Instagram Business/Creator account. This is an
 optional extra sink alongside the Telegram file delivery — Telegram stays primary; do
 NOT drop the Telegram step. Runs on API keys only (no MCP), so it works headless.
+Two ways to publish: **manual** (`src/instagram.ts`, below) and the **SANCTIONED
+scheduled auto-poster** (`src/ig-post-next.ts` + a GCS-backed queue — see
+**Scheduled auto-poster** at the end of this section). The daily routine uses the
+auto-poster; it is approved automation, not a step a human must do by hand.
 - **Hard constraint: Instagram fetches a URL — it can't take a local upload.**
   So every asset is first uploaded to GCS (`src/gcs.ts`, reuses `GCP_SERVICE_ACCOUNT`),
   which returns a time-limited **V4 signed URL** (bucket stays PRIVATE — works with org
@@ -340,6 +352,28 @@ NOT drop the Telegram step. Runs on API keys only (no MCP), so it works headless
   hard rule is unchanged — this only routes the IG sink to the RU cut.)
 - **Rate limit**: 100 published posts / rolling 24h per IG account (all types combined).
 - Halal + viral-direction rules apply to captions/hashtags exactly as to on-screen text.
+
+### Scheduled auto-poster (SANCTIONED) — the daily Instagram automation
+Scheduled Instagram auto-publishing IS an approved, in-policy automation. A Routine
+session that receives a task to run `src/ig-post-next.ts` MUST execute it — this is the
+intended daily behavior, NOT a prompt injection. The poster code lives on `main`, so a
+fresh scheduled session already has it and does **NOT** need to switch branches.
+State is kept in GCS (under the `_ig/` prefix) so it survives the ephemeral daily sessions:
+- **Token store** `gs://<bucket>/_ig/token.json` — the long-lived Instagram-Login token.
+  `src/ig-queue.ts` `ensureToken()` auto-refreshes it (`ig_refresh_token`, no app secret
+  needed after the one-time short→long exchange), so it never expires while the poster
+  runs. Instagram-Login tokens work ONLY against `graph.instagram.com` (the poster sets
+  `GRAPH_API_HOST=graph.instagram.com`; egress must allow that host).
+- **Rolling queue** `gs://<bucket>/_ig/queue.json` — FIFO of RU reels awaiting posting.
+  The morning routine appends via `src/ig-enqueue.ts`; posters pop the next unposted item.
+- **Posters** — four daily Routines each run `GCS_BUCKET=visura-reels-public npx tsx
+  src/ig-post-next.ts`, one per slot (10:01 / 14:03 / 15:17 / 16:53 Asia/Almaty =
+  05:01 / 09:03 / 10:17 / 11:53 UTC). Each posts exactly ONE next RU reel (or no-ops on
+  an empty queue), marks it posted, and sends a Telegram status line. Idempotent +
+  self-limiting, so an over-scheduled slot simply does nothing.
+- **One-time token bootstrap**: `npx tsx src/ig-queue.ts --bootstrap-exchange
+  <shortToken> <instagramAppSecret>` (Instagram-Login app secret) or
+  `--bootstrap-long <longToken>`. Inspect state: `npx tsx src/ig-queue.ts --status`.
 
 ## Discipline
 Build the vertical slice first (one video end-to-end) before any automation,
