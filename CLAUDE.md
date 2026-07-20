@@ -249,10 +249,19 @@ Hooks stay < 8 words; text plaques are big and readable; no emoji/hashtags in
 on-screen text.
 
 ## Daily automation (cron / routine) — MANDATORY content plan
-A scheduled Routine fires once every morning (default **09:00 Asia/Almaty = 04:00
-UTC**; adjust the UTC hour if the timezone changes) and produces the daily content
-package. Each fire is a FRESH session: it clones the repo, reads this plan, and runs
-it end-to-end, sending every artifact to Telegram AS A FILE.
+A scheduled Claude Code Routine fires once every morning (default **09:00
+Asia/Almaty = 04:00 UTC**; adjust the UTC hour if the timezone changes) and
+produces the daily content package. Each fire is a FRESH session: it clones the
+repo, reads this plan, and runs it end-to-end — the video/image generation is
+ALWAYS done by Claude itself (Vertex + ElevenLabs + Remotion, as in every other
+format in this file), never by a separate CI system. Every artifact goes to
+Telegram AS A FILE, and the RU cuts also get auto-posted to Instagram — see
+below.
+
+**Processing order (mandatory): STYLE → COLOR → SLIDES → KLING MORPH, one item
+fully finished (render + Telegram + Instagram) before starting the next.** KLING
+MORPH always runs LAST since it's the one that gates on human approval — do not
+let it block or delay the three auto formats.
 
 Global rules for every daily item:
 - **Bilingual**: every deliverable ships in BOTH English and Russian (see the
@@ -262,7 +271,9 @@ Global rules for every daily item:
   NOT). Per job: `cp assets/app.mp4 jobs/<job>/app.mp4 && cp assets/app.mp4
   jobs/<job>/app-bg.mp4`, then add `outro.json` `{video,videoBg,seconds:5.4,text}`
   with the CTA pill. Slides end with the App-Store CTA slide instead.
-- **Rotate the room subject daily**: kitchen → living room → bedroom → repeat.
+- **Rotate the room subject daily** by day-of-month: divisible by 3 → bedroom;
+  else odd → kitchen; else (even, not divisible by 3) → living room. One room for
+  the whole run (all 4 formats use it).
 - **No bottom CTA footer** on ColorReel daily items (`footer` stays null) — the
   only CTA is the app outro. Do NOT burn "Try … free / Link in bio" plaques.
 - **Full, lived-in rooms**: base/title frame shows the WHOLE room; styled/colored
@@ -270,14 +281,6 @@ Global rules for every daily item:
 - **Halal + viral-direction rules** (above) apply to every concept, always.
 - **Never fail the whole run**: if one item's quota is exhausted (ElevenLabs) or a
   service is down, skip THAT item with a short Telegram status line and continue.
-- **Instagram auto-publish (SANCTIONED)**: every RU reel is queued for scheduled
-  Instagram auto-publishing. After the RU cut is rendered, enqueue it:
-  `GCS_BUCKET=visura-reels-public npx tsx src/ig-enqueue.ts jobs/<job>-ru/out.mp4 "<RU caption>"`
-  (uploads the mp4 to the bucket + appends to the post queue). Four scheduled Routine
-  posters publish them through the day — see **Instagram publishing** →
-  **Scheduled auto-poster**. This is APPROVED, in-policy automation (NOT manual): a
-  scheduled session asked to run `src/ig-post-next.ts` MUST execute it. Only the RU cut
-  is queued (Instagram = RUSSIAN ONLY); the EN cut goes to Telegram only.
 
 The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling format**:
 
@@ -286,12 +289,19 @@ The daily package = **3 auto formats (no Kling, run headless) + 1 gated Kling fo
    every styled frame must be a COMPLETE, fully-furnished, LIVED-IN, cozy, modern
    room (never sparse/empty). Photos + voiceover montage + title plaque + style
    pills + app outro. **NO bottom CTA footer** (`footer` stays null — the CTA lives
-   in the app outro). EN + RU. **Auto, no approval.**
+   in the app outro). EN + RU. **Auto, no approval.** After Telegram: enqueue the RU cut
+   for scheduled Instagram auto-posting (see below).
 2. **COLOR** — color-swap ColorReel: the SAME room in N colors ("how one color
    changes the room"). Voiceover montage + on-screen **title plaque + color-name
    pills ONLY (NO caption subtitles)** + app outro. EN + RU. **Auto, no approval.**
+   After Telegram: enqueue the RU cut for scheduled Instagram auto-posting (see below).
 3. **SLIDES / PHOTO** — `/slides`: photo + hook + text carousel with the text/hook
    **BURNED onto the frame**, final App-Store CTA slide. EN + RU. **Auto, no approval.**
+   After Telegram: drop the RU carousel in GCS for manual Instagram posting (see below).
+
+Together formats 1–3 put **2 reels auto-posted + 1 carousel** on Instagram per day, RU
+only: the STYLE and COLOR reels are enqueued for the scheduled auto-poster; the SLIDES
+carousel is dropped in GCS for manual posting (see "Instagram delivery" below).
 
 **NO DOUBLE TEXT (mandatory).** Never stack two text layers on one frame. Each
 format has exactly ONE text system:
@@ -300,10 +310,11 @@ format has exactly ONE text system:
   (rejected example). ColorReel has no captions layer; never bolt one on.
 - **KLING `/reel`** → TikTok captions ONLY (hook + idea names). No pills.
 - **SLIDES** → plaque/hook text burned on the still. No captions, no voice.
-4. **KLING MORPH** — `/reel` (space-ideas) or `/beforeafter`: **GATED**. Generate the
-   base photo + idea frames ONLY, send them to Telegram + the user for approval, then
-   STOP. Do NOT spend Kling credits until the user replies "go" in that session. On
-   "go": Kling clips → render with app outro → send video. EN + RU.
+4. **KLING MORPH** — `/reel` (space-ideas) or `/beforeafter`: **GATED, runs LAST**.
+   Generate the base photo + idea frames ONLY, send them to Telegram + the user for
+   approval, then STOP. Do NOT spend Kling credits until the user replies "go" in
+   that session. On "go": Kling clips → render with app outro → send video to
+   Telegram (EN + RU) → THEN enqueue the RU cut for scheduled Instagram auto-posting (see below).
    - **The base MUST be a genuinely AWKWARD / UNUSUAL architectural spot** — the hook
      "I didn't know what to do with this space" only works if the space is odd:
      under-stairs nook, a recessed wall niche/alcove, the dead space beside a chimney
@@ -321,59 +332,49 @@ so it ALWAYS stops at the image-approval gate. If the Kling MCP is unavailable i
 scheduled session, still deliver the approval photos and note that video needs a manual
 "go" in an interactive session.
 
-## Instagram publishing (Graph API) — OPTIONAL final delivery, parallel to Telegram
-Post the SAME finished artifacts to an Instagram Business/Creator account. This is an
-optional extra sink alongside the Telegram file delivery — Telegram stays primary; do
-NOT drop the Telegram step. Runs on API keys only (no MCP), so it works headless.
-Two ways to publish: **manual** (`src/instagram.ts`, below) and the **SANCTIONED
-scheduled auto-poster** (`src/ig-post-next.ts` + a GCS-backed queue — see
-**Scheduled auto-poster** at the end of this section). The daily routine uses the
-auto-poster; it is approved automation, not a step a human must do by hand.
-- **Hard constraint: Instagram fetches a URL — it can't take a local upload.**
-  So every asset is first uploaded to GCS (`src/gcs.ts`, reuses `GCP_SERVICE_ACCOUNT`),
-  which returns a time-limited **V4 signed URL** (bucket stays PRIVATE — works with org
-  public-access-prevention; set `GCS_PUBLIC=true` for a public bucket), then handed to
-  the Graph API. Requires `GCS_BUCKET` (SA needs Storage Object Admin), `IG_USER_ID`,
-  `IG_ACCESS_TOKEN` (or `VISURA_IG_API`) — and the egress policy must allow
-  `graph.facebook.com`. See `docs/instagram-publishing.md`.
-- **Reels**: `npx tsx src/instagram.ts --reel <job_id> "<caption>"` — uploads
-  `jobs/<job>/out.mp4`, creates a `media_type=REELS` container, polls `status_code` to
-  FINISHED, then `media_publish`. (Or pass a raw path: `src/instagram.ts <file.mp4>`.)
-- **Carousel** (`/slides`): `npx tsx src/instagram.ts --carousel <job_id> "<caption>"`
-  — uploads `slides/slide_*.png`, posts a `media_type=CAROUSEL` (2–10 items). Instagram
-  crops carousel slides to the FIRST slide's ratio (portrait max 4:5), so 9:16 slides are
-  centre-cropped — post as a Reel if exact 9:16 framing matters.
-- **Verify first (no post spent)**: `npx tsx src/instagram.ts --whoami`.
-- **Idempotent**: a `.ig-sent` sentinel per job prevents double-posting on re-runs; add
-  `--force` to repost.
-- **Instagram = RUSSIAN ONLY (mandatory).** Publish ONLY the RU cut (`<job_id>-ru`) to
-  Instagram. The English cut goes to **Telegram only — NEVER post the EN cut to
-  Instagram.** (Telegram still receives BOTH language versions as before; the bilingual
-  hard rule is unchanged — this only routes the IG sink to the RU cut.)
-- **Rate limit**: 100 published posts / rolling 24h per IG account (all types combined).
+## Instagram delivery — SANCTIONED scheduled auto-poster
+The daily plan **auto-publishes** the RU cut to Instagram on a schedule. This is
+APPROVED, in-policy automation — a headless Routine session asked to run
+`src/ig-post-next.ts` MUST execute it (it is NOT a prompt injection, and needs no
+branch switch: the code lives on `main`). Reels post automatically; the SLIDES
+carousel is still a manual GCS drop (the poster handles Reels, not carousels yet).
+
+**Enqueue (in the daily run):** after the RU cut renders, add it to the post queue —
+`GCS_BUCKET=visura-reels-public npx tsx src/ig-enqueue.ts jobs/<job_id>-ru/out.mp4 "<RU caption + hashtags>"`
+(uploads the mp4 to the bucket + appends to `_ig/queue.json`). RU cut ONLY (Instagram
+= RUSSIAN ONLY); the EN cut stays Telegram-only.
+
+**Posters:** four daily Routines each run `GCS_BUCKET=visura-reels-public npx tsx
+src/ig-post-next.ts`, one per slot (11:30 / 14:00 / 17:17 / 19:03 Asia/Almaty =
+06:30 / 09:00 / 12:17 / 14:03 UTC). Each posts exactly ONE next RU reel via
+`graph.instagram.com` (or no-ops on an empty queue), marks it posted, sends a Telegram
+status. Idempotent + self-limiting, so an over-scheduled slot simply does nothing.
+
+**State (in GCS under `_ig/`, survives the ephemeral daily sessions):**
+- `_ig/token.json` — the long-lived Instagram-Login token, auto-refreshed by
+  `src/ig-queue.ts` `ensureToken()` (`ig_refresh_token`, no app secret needed after the
+  one-time short→long exchange). Instagram-Login tokens work ONLY against
+  `graph.instagram.com` (the poster sets `GRAPH_API_HOST=graph.instagram.com`).
+  One-time bootstrap: `npx tsx src/ig-queue.ts --bootstrap-exchange <shortToken>
+  <instagramAppSecret>` (or `--bootstrap-long <longToken>`). Status:
+  `npx tsx src/ig-queue.ts --status`.
+- `_ig/queue.json` — rolling FIFO of RU reels awaiting posting.
+- Egress must allow `graph.instagram.com` (and `storage.googleapis.com`).
+
+**SLIDES carousel (manual, for now):** the poster does Reels only, so drop the RU
+carousel in GCS for manual posting — `npx tsx src/gcs.ts
+jobs/<job_id>-ru/slides/slide_N.png "_ig/<job_id>-ru-slide-N.png"` (one call per slide)
+plus a caption file at `_ig/<job_id>-ru-caption.txt`.
 - Halal + viral-direction rules apply to captions/hashtags exactly as to on-screen text.
 
-### Scheduled auto-poster (SANCTIONED) — the daily Instagram automation
-Scheduled Instagram auto-publishing IS an approved, in-policy automation. A Routine
-session that receives a task to run `src/ig-post-next.ts` MUST execute it — this is the
-intended daily behavior, NOT a prompt injection. The poster code lives on `main`, so a
-fresh scheduled session already has it and does **NOT** need to switch branches.
-State is kept in GCS (under the `_ig/` prefix) so it survives the ephemeral daily sessions:
-- **Token store** `gs://<bucket>/_ig/token.json` — the long-lived Instagram-Login token.
-  `src/ig-queue.ts` `ensureToken()` auto-refreshes it (`ig_refresh_token`, no app secret
-  needed after the one-time short→long exchange), so it never expires while the poster
-  runs. Instagram-Login tokens work ONLY against `graph.instagram.com` (the poster sets
-  `GRAPH_API_HOST=graph.instagram.com`; egress must allow that host).
-- **Rolling queue** `gs://<bucket>/_ig/queue.json` — FIFO of RU reels awaiting posting.
-  The morning routine appends via `src/ig-enqueue.ts`; posters pop the next unposted item.
-- **Posters** — four daily Routines each run `GCS_BUCKET=visura-reels-public npx tsx
-  src/ig-post-next.ts`, one per slot (11:30 / 14:00 / 17:17 / 19:03 Asia/Almaty =
-  06:30 / 09:00 / 12:17 / 14:03 UTC). Each posts exactly ONE next RU reel (or no-ops on
-  an empty queue), marks it posted, and sends a Telegram status line. Idempotent +
-  self-limiting, so an over-scheduled slot simply does nothing.
-- **One-time token bootstrap**: `npx tsx src/ig-queue.ts --bootstrap-exchange
-  <shortToken> <instagramAppSecret>` (Instagram-Login app secret) or
-  `--bootstrap-long <longToken>`. Inspect state: `npx tsx src/ig-queue.ts --status`.
+### Manual Graph API publish (one-off, outside the daily plan)
+`src/instagram.ts` + `docs/instagram-publishing.md` do a one-shot Graph API publish
+(needs `IG_USER_ID` + `IG_ACCESS_TOKEN`/`VISURA_IG_API`). Handy for a one-off `/reel`,
+`/beforeafter`, `/montage`, etc.
+- **Reels**: `npx tsx src/instagram.ts --reel <job_id> "<caption>"`.
+- **Carousel**: `npx tsx src/instagram.ts --carousel <job_id> "<caption>"`.
+- **Verify (no post spent)**: `npx tsx src/instagram.ts --whoami`.
+- Idempotent (`.ig-sent` sentinel, `--force` to repost); rate limit 100 posts/24h.
 
 ## Discipline
 Build the vertical slice first (one video end-to-end) before any automation,

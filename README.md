@@ -28,6 +28,18 @@ All job artifacts live under `jobs/<job_id>/`: `images/`, `clips/`, `voice.mp3`,
 `timestamps.json`, `captions.json`, `props.json`, `out.mp4`. Every step is
 idempotent — outputs that already exist are skipped.
 
+## Daily content + Instagram delivery
+
+The daily package (STYLE → COLOR → SLIDES → gated KLING MORPH) is produced by
+Claude itself in a scheduled Claude Code Routine session — see "Daily automation"
+in `CLAUDE.md`. There is no separate CI/cron system generating content: Claude
+always does the generation. Instagram delivery is a simple GCS drop, not an
+automated publish — Claude uploads each finished RU artifact to
+`gs://visura-reels-public/_ig/` (`npx tsx src/gcs.ts <file> "_ig/<name>"`) plus a
+caption `.txt`, and a human posts it from there. A fully automated Graph API
+publish path also exists (`src/instagram.ts`, `docs/instagram-publishing.md`) for
+one-off runs if you want it, but the daily plan doesn't use it.
+
 ## Slides pipeline (photo + hook + text carousel)
 
 A second, video-free output: a TikTok photo-slideshow — vertical photos with big
