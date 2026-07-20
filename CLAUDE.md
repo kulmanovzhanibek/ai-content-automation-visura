@@ -367,8 +367,8 @@ State is kept in GCS (under the `_ig/` prefix) so it survives the ephemeral dail
 - **Rolling queue** `gs://<bucket>/_ig/queue.json` — FIFO of RU reels awaiting posting.
   The morning routine appends via `src/ig-enqueue.ts`; posters pop the next unposted item.
 - **Posters** — four daily Routines each run `GCS_BUCKET=visura-reels-public npx tsx
-  src/ig-post-next.ts`, one per slot (10:01 / 14:03 / 15:17 / 16:53 Asia/Almaty =
-  05:01 / 09:03 / 10:17 / 11:53 UTC). Each posts exactly ONE next RU reel (or no-ops on
+  src/ig-post-next.ts`, one per slot (11:30 / 14:00 / 17:17 / 19:03 Asia/Almaty =
+  06:30 / 09:00 / 12:17 / 14:03 UTC). Each posts exactly ONE next RU reel (or no-ops on
   an empty queue), marks it posted, and sends a Telegram status line. Idempotent +
   self-limiting, so an over-scheduled slot simply does nothing.
 - **One-time token bootstrap**: `npx tsx src/ig-queue.ts --bootstrap-exchange
