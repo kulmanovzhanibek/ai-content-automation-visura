@@ -127,6 +127,11 @@ export async function sendSlides(jobId: string, force = false): Promise<void> {
   console.log(`[telegram] all ${slides.length} slides sent (wrote ${sentinel})`);
 }
 
+/** Send a plain text status message (no file) to the chat. */
+export async function sendText(text: string): Promise<void> {
+  callBotApi("sendMessage", undefined, [`text=${text}`, "disable_web_page_preview=true"]);
+}
+
 /** Send as video: inline player, but Telegram may transcode it. */
 export async function sendVideo(videoPath: string, caption?: string): Promise<void> {
   assertFile(videoPath);
